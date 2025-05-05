@@ -2,7 +2,7 @@
 
 julia_version = "1.11.5"
 manifest_format = "2.0"
-project_hash = "2781aedd45dffb49be3f0393606f20a3fe1ae053"
+project_hash = "3997f4d0036e8f49023f1865861135da00098acc"
 
 [[deps.ADTypes]]
 git-tree-sha1 = "e2478490447631aedba0823d4d7a80b2cc8cdb32"
@@ -470,9 +470,9 @@ version = "1.7.0"
 
 [[deps.StatsBase]]
 deps = ["AliasTables", "DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "29321314c920c26684834965ec2ce0dacc9cf8e5"
+git-tree-sha1 = "b81c5035922cc89c2d9523afc6c54be512411466"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.4"
+version = "0.34.5"
 
 [[deps.SuiteSparse_jll]]
 deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
