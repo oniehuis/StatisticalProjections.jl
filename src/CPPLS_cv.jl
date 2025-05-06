@@ -24,7 +24,7 @@ function random_batch_indices(
     for (stratum, indices) in strata_groups
         shuffled = shuffle(rng, indices)
         n = length(shuffled)
-        if n % num_batches ≠ 0
+        if !(n % num_batches ≈ 0)
             @info ("Stratum $stratum (size = $n) not evenly divisible by " 
                 * "$num_batches batches.")
         end
