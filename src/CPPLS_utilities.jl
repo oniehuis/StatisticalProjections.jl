@@ -54,6 +54,17 @@ function clr_transform!(matrix::AbstractMatrix{<:Real}; dims::Integer=2)
     @. matrix = log(matrix / geometric_means)
 end
 
+
+function labels_to_one_hot(label_indices::AbstractVector{<:Integer}, n_labels::Integer)
+    n_samples = length(label_indices)
+    one_hot = zeros(Int, n_samples, n_labels)
+    for i in 1:n_samples
+        one_hot[i, label_indices[i]] = 1
+    end
+    one_hot
+end
+
+
 function labels_to_one_hot(labels::AbstractVector)
     unique_labels = sort(collect(Set(labels)))  # consistent label order
     label_to_index = Dict(label => i for (i, label) in enumerate(unique_labels))

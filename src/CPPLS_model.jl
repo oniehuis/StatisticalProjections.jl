@@ -931,13 +931,14 @@ result = one_hot_argmax(predictions)
 function one_hot_argmax(predictions::AbstractArray{<:Real, 3})
     # Sum over the last dimension to collapse it
     summed_predictions = dropdims(sum(predictions, dims=3), dims=3)
-    
+    n_labels = size(summed_predictions, 2)
+
     # Get the predicted classes by finding the index of the maximum value in each row
     predicted_classes = argmax(summed_predictions, dims=2)
-    predicted_classes = vec(getindex.(predicted_classes, 2))  # Convert CartesianIndex to integers
+    label_indices = vec(getindex.(predicted_classes, 2))  # Convert CartesianIndex to integers
 
     # Use labels_to_one_hot to convert class labels to a one-hot encoded matrix
-    first(labels_to_one_hot(predicted_classes))
+    labels_to_one_hot(label_indices, n_labels)
 end
 
 
