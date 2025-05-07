@@ -123,25 +123,36 @@ function optimize_num_latent_variables(
         misclassification_costs = Vector{Float64}(undef, max_components)
 
         # Train model and evaluate for each number of latent variables
-        model = fit_cppls_light(X_train, Y_train, max_components, 
-            gamma=gamma,
-            observation_weights=observation_weights,
-            Y_auxiliary=Y_auxiliary_train,
-            center=center,
-            X_tolerance=X_tolerance, 
-            X_loading_weight_tolerance=X_loading_weight_tolerance,
-            gamma_optimization_tolerance=gamma_optimization_tolerance)
+        try
+            model = fit_cppls_light(X_train, Y_train, max_components, 
+                gamma=gamma,
+                observation_weights=observation_weights,
+                Y_auxiliary=Y_auxiliary_train,
+                center=center,
+                X_tolerance=X_tolerance, 
+                X_loading_weight_tolerance=X_loading_weight_tolerance,
+                gamma_optimization_tolerance=gamma_optimization_tolerance)
 
-        for (num_components_idx, num_components) in enumerate(1:max_components)
-            Y_pred = one_hot_argmax(predict(model, X_validation, num_components))
-            misclassification_costs[num_components_idx] = nmc(Y_validation, Y_pred, 
-                weighted_nmc)
+            for (num_components_idx, num_components) in enumerate(1:max_components)
+                Y_pred = one_hot_argmax(predict(model, X_validation, num_components))
+                misclassification_costs[num_components_idx] = nmc(Y_validation, Y_pred, 
+                    weighted_nmc)
+            end
+
+            # Select the number of latent variables with the lowest misclassification cost
+            best_num_latent_vars_per_fold[inner_fold_idx] = argmin(misclassification_costs)
+            verbose && println("    Best number of latent variables in fold ", inner_fold_idx, ": ", 
+                best_num_latent_vars_per_fold[inner_fold_idx])
+        catch e
+            @warn("Error in inner fold $inner_fold_idx: ", e)
+            # best_num_latent_vars_per_fold[inner_fold_idx] = NaN
         end
+    end
 
-        # Select the number of latent variables with the lowest misclassification cost
-        best_num_latent_vars_per_fold[inner_fold_idx] = argmin(misclassification_costs)
-        verbose && println("    Best number of latent variables in fold ", inner_fold_idx, ": ", 
-            best_num_latent_vars_per_fold[inner_fold_idx])
+    # best_num_latent_vars_per_fold = filter(!isnan, best_num_latent_vars_per_fold)
+
+    if isempty(best_num_latent_vars_per_fold)
+        throw(ArgumentError("No valid number of latent variables found in inner folds. "))
     end
 
     # Return the median of the best latent variables across all folds
@@ -299,26 +310,31 @@ function nested_cv(
             verbose)
 
         # Train the final model using the optimal number of latent variables
-        final_model = fit_cppls_light(
-            X_train,
-            Y_train, 
-            optimal_num_latent_variables[outer_fold_idx], 
-            gamma=gamma,
-            observation_weights=observation_weights,
-            Y_auxiliary=Y_auxiliary_train,
-            center=center,
-            X_tolerance=X_tolerance, 
-            X_loading_weight_tolerance=X_loading_weight_tolerance,
-            gamma_optimization_tolerance=gamma_optimization_tolerance)
+        try
+            final_model = fit_cppls_light(
+                X_train,
+                Y_train, 
+                optimal_num_latent_variables[outer_fold_idx], 
+                gamma=gamma,
+                observation_weights=observation_weights,
+                Y_auxiliary=Y_auxiliary_train,
+                center=center,
+                X_tolerance=X_tolerance, 
+                X_loading_weight_tolerance=X_loading_weight_tolerance,
+                gamma_optimization_tolerance=gamma_optimization_tolerance)
 
-        # Predict the response labels for the test set
-        predicted_labels = one_hot_argmax(predict(final_model, X_test))
+            # Predict the response labels for the test set
+            predicted_labels = one_hot_argmax(predict(final_model, X_test))
 
-        # Compute accuracy for the current outer fold
-        outer_fold_accuracies[outer_fold_idx] = 1 - nmc(predicted_labels, Y_test, weighted_nmc)
+            # Compute accuracy for the current outer fold
+            outer_fold_accuracies[outer_fold_idx] = 1 - nmc(predicted_labels, Y_test, weighted_nmc)
 
-        verbose && println("Accuracy for outer fold: ", 
-            outer_fold_accuracies[outer_fold_idx], "\n")
+            verbose && println("Accuracy for outer fold: ", 
+                outer_fold_accuracies[outer_fold_idx], "\n")
+        catch e
+            @warn("Error in outer fold $outer_fold_idx: ", e)
+            outer_fold_accuracies[outer_fold_idx] = NaN
+        end
     end
 
     # Return the accuracies and the optimal number of latent variables for all outer folds
