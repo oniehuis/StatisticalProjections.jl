@@ -1,3 +1,5 @@
+using JLD2
+
 function random_batch_indices(
     strata::AbstractVector{<:Integer},
     num_batches::Integer,
@@ -143,8 +145,24 @@ function optimize_num_latent_variables(
             best_num_latent_vars_per_fold[inner_fold_idx] = argmin(misclassification_costs)
             verbose && println("    Best number of latent variables in fold ", inner_fold_idx, ": ", 
                 best_num_latent_vars_per_fold[inner_fold_idx])
+            
         catch e
             @warn("Error in inner fold $inner_fold_idx: ", e)
+
+            filename = string("error_set", inner_fold_idx, ".jld2")
+            path = "/gpfs/bwfor/work/ws/fr_on1000-Polistes"
+            file = joinpath(path, filename)
+            save(
+                file,
+                Dict(
+                    "X_train" => X_train,
+                    "Y_train" => Y_train,
+                    "max_components" => max_components,
+                    "gamma" => gamma,
+                    "Y_auxiliary_train" => Y_auxiliary_train,
+                    "center" => center, "X_tolerance" => X_tolerance,
+                    "X_loading_weight_tolerance" => X_loading_weight_tolerance,
+                    "gamma_optimization_tolerance" => gamma_optimization_tolerance))
             # best_num_latent_vars_per_fold[inner_fold_idx] = NaN
         end
     end
