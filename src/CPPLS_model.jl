@@ -527,11 +527,18 @@ function process_component!(
     X_tolerance::Real,
     X_loading_weight_tolerance::Real
 )
+    println("X_deflated0: ")
+    println(any(isnan, X_deflated))
+    println("X_loading_weightsᵢ0: ")
+    println(any(isnan, X_loading_weightsᵢ))
+    println("X_loading_weights0: ")
+    println(any(isnan, X_loading_weights0))
+
     # Normalize and apply tolerance
     X_loading_weightsᵢ .= (X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) 
         .* (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance))
 
-    println("X_loading_weightsᵢ: ")
+    println("X_loading_weightsᵢ2: ")
     println(any(isnan, X_loading_weightsᵢ))
 
     # Compute scores and loadings
@@ -595,7 +602,7 @@ function process_component!(
 
     println("regression_coefficients: ")
     println(any(isnan, regression_coefficients))
-
+    println()
     X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
 end
 
@@ -778,7 +785,7 @@ function fit_cppls(
     projection = X_loading_weights * inv(X_loadings' * X_loading_weights)
     X_variance_explained = vec(sum(X_loadings .* X_loadings, dims=1)) .* X_score_norms
     X_total_variance = sum(X_predictors .* X_predictors)
-    
+
     # Return the CPPLS object containing all results
     CPPLS(regression_coefficients, X_scores, X_loadings, X_loading_weights, Y_scores, 
         Y_loadings, projection, X̄_mean, Ȳ_mean, fitted_values, Y_residuals, 
