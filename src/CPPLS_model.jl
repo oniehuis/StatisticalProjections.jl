@@ -70,22 +70,10 @@ function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     # Get the number of rows and columns in the predictor matrix X
     n_rows, n_cols = size(X)
 
-    println("X: ")
-    println(size(X))
-    println(any(isnan, X))
-    println(any(isinf, X))
-    println(minimum(abs, X), maximum(abs, X))
-
     # Perform QR decomposition with column pivoting on both X and Y
     # This step orthogonalizes the columns of X and Y while preserving their rank
     qx = qr(X, ColumnNorm())
     qy = qr(Y, ColumnNorm())
-
-    println("qx: ")
-    println(size(qx.R))
-    println(any(isnan, qx.R))
-    println(any(isinf, qx.R))
-    println(minimum(abs, qx.R), maximum(abs, qx.R))
 
     # Compute the rank of X and Y from the R matrices of the QR decompositions
     dx = rank(qx.R)
@@ -261,7 +249,17 @@ function evaluate_canonical_correlation(
     # Compute the X_projected as the product of X_deflated and initial_weights.
     # X_projected represents the projection of X_deflated onto the space defined by 
     # initial_weights.
+
+    println("X_deflated: ")
+    println(any(isnan, X_deflated))
+    println("initial_weights: ")
+    println(any(isnan, initial_weights))
+
     X_projected = X_deflated * initial_weights
+
+    println("X_projected: ")
+    println(any(isnan, X_projected))
+    println()
 
     # Perform canonical correlation analysis (CCA) on X_projected and Y_responses.
     max_canonical_correlation = cca_corr(X_projected, Y_responses, observation_weights)
