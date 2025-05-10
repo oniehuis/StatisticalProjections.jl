@@ -525,40 +525,21 @@ function process_component!(
     regression_coefficients::Array{<:Real,3},
     small_norm_flags::AbstractMatrix{Bool},
     X_tolerance::Real,
-    X_loading_weight_tolerance::Real
-)
+    X_loading_weight_tolerance::Real,
+    tᵢ_squared_norm_tolerance::Real)
+
     # Normalize and apply tolerance
     X_loading_weightsᵢ .= (X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) 
         .* (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance))
 
     # Compute scores and loadings
-    println("X_deflated: ")
-    println(any(isnan, X_deflated))
-
-    println("X_loading_weightsᵢ: ")
-    println(any(isnan, X_loading_weightsᵢ))
-
     X_scoresᵢ = X_deflated * X_loading_weightsᵢ
-
-    println("X_scoresᵢ: ")
-    println(any(isnan, X_scoresᵢ))
-
     tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
 
     if isapprox(tᵢ_squared_norm, 0.0)
-        tᵢ_squared_norm += 1e-10
+        tᵢ_squared_norm += tᵢ_squared_norm_tolerance
     end
-
-    println(tᵢ_squared_norm)
-
-    println("tᵢ_squared_norm: ")
-    println(any(isnan, tᵢ_squared_norm))
-
     X_loadingsᵢ = (X_deflated' * X_scoresᵢ) / tᵢ_squared_norm
-    
-    println("X_loadingsᵢ: ")
-    println(any(isnan, X_loadingsᵢ))
-
     Y_loadingsᵢ = (Y_responses' * X_scoresᵢ) / tᵢ_squared_norm
 
     # Deflate
@@ -572,27 +553,11 @@ function process_component!(
     X_loading_weights[:, i] .= X_loading_weightsᵢ
     X_loadings[:, i] .= X_loadingsᵢ
     Y_loadings[:, i] .= Y_loadingsᵢ
-
-    M = X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]
-
-    if rank(M) < min(size(M)...)
-        @warn "Rank-deficient matrix at component $i — using pinv()"
-        M_inv = pinv(M)  # handles singular/near-singular safely
-    else
-        M_inv = M \ I  # efficient solve when full rank
-    end
-
-    regression_coefficients[:, :, i] .= X_loading_weights[:, 1:i] * M_inv * Y_loadings[:, 1:i]'
-
-    # regression_coefficients[:, :, i] .= (
-    #     X_loading_weights[:, 1:i] *
-    #     (inv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
-    # )
+    regression_coefficients[:, :, i] .= (X_loading_weights[:, 1:i] * 
+        pinv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
 
     X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
 end
-
-
 
 
 # """
@@ -722,7 +687,8 @@ function fit_cppls(
     center::Bool=true,
     X_tolerance::Real=1e-12,
     X_loading_weight_tolerance::Real=eps(Float64),
-    gamma_optimization_tolerance::Real=1e-4
+    gamma_optimization_tolerance::Real=1e-4,
+    tᵢ_squared_norm_tolerance::Real=1e-10
     ) where {T1<:Real, T2<:Real, T3<:Real}
 
     (X_predictors, Y_responses, Y_combined, observation_weights, X̄_mean, Ȳ_mean,
@@ -750,7 +716,7 @@ function fit_cppls(
         X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ = process_component!(i, X_deflated, 
             X_loading_weightsᵢ, Y_responses, X_loading_weights, X_loadings, Y_loadings, 
             regression_coefficients, small_norm_flags, X_tolerance, 
-            X_loading_weight_tolerance)
+            X_loading_weight_tolerance, tᵢ_squared_norm_tolerance)
     
         # Store additional results
         X_scores[:, i] = X_scoresᵢ
@@ -768,16 +734,7 @@ function fit_cppls(
     fitted_values .+= reshape(repeat(Ȳ_mean, n_samples_X), n_samples_X, length(Ȳ_mean), 
         1)
     Y_residuals = Y_responses .- fitted_values
-
-    M = X_loadings' * X_loading_weights
-    projection = if rank(M) < min(size(M)...)
-        @warn "Rank-deficient projection matrix — using pinv"
-        X_loading_weights * pinv(M)
-    else
-        X_loading_weights * (M \ I)
-    end
-
-    # projection = X_loading_weights * inv(X_loadings' * X_loading_weights)
+    projection = X_loading_weights * pinv(X_loadings' * X_loading_weights)
     X_variance_explained = vec(sum(X_loadings .* X_loadings, dims=1)) .* X_score_norms
     X_total_variance = sum(X_predictors .* X_predictors)
 
@@ -799,7 +756,8 @@ function fit_cppls_light(
     center::Bool=true,
     X_tolerance::Real=1e-12,
     X_loading_weight_tolerance::Real=eps(Float64),
-    gamma_optimization_tolerance::Real=1e-4 # -4
+    gamma_optimization_tolerance::Real=1e-4,
+    tᵢ_squared_norm_tolerance::Real=1e-10
     ) where {T1<:Real, T2<:Real, T3<:Real}
 
     (X_predictors, Y_responses, Y_combined, observation_weights, X̄_mean, Ȳ_mean,
@@ -816,7 +774,8 @@ function fit_cppls_light(
 
         process_component!(i, X_deflated, X_loading_weightsᵢ, Y_responses,
             X_loading_weights, X_loadings, Y_loadings, regression_coefficients,
-            small_norm_flags, X_tolerance, X_loading_weight_tolerance)
+            small_norm_flags, X_tolerance, X_loading_weight_tolerance, 
+            tᵢ_squared_norm_tolerance)
 
     end
 
