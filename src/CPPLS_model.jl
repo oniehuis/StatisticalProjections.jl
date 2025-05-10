@@ -532,7 +532,7 @@ function process_component!(
     println("X_loading_weightsᵢ0: ")
     println(any(isnan, X_loading_weightsᵢ))
     println("X_loading_weights0: ")
-    println(any(isnan, X_loading_weights0))
+    println(any(isnan, X_loading_weights))
 
     # Normalize and apply tolerance
     X_loading_weightsᵢ .= (X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) 
