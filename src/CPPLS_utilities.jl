@@ -80,3 +80,52 @@ function labels_to_one_hot(labels::AbstractVector)
     
     one_hot, unique_labels
 end
+
+
+"""
+    find_invariant_and_variant_columns(M::AbstractMatrix)
+
+Identify invariant and variant columns in a matrix.
+
+# Arguments
+- `M::AbstractMatrix`: The input matrix where each column is analyzed to determine whether 
+  it is invariant (all elements are the same) or variant (elements differ).
+
+# Returns
+- `(invariant_columns::Vector{Int}, variant_columns::Vector{Int})`: 
+  A tuple containing:
+  - `invariant_columns`: A vector of column indices where all elements are the same.
+  - `variant_columns`: A vector of column indices where at least one element differs.
+
+# Description
+This function iterates over the columns of the input matrix `M` and checks whether all 
+elements in each column are the same. Columns with identical elements are classified as 
+"invariant," while columns with differing elements are classified as "variant."
+
+# Example
+```julia
+julia> M = [1 2 2; 1 1 2; 1 2 2]
+3×3 Matrix{Int64}:
+ 1  2  2
+ 1  1  2
+ 1  2  2
+
+julia> invariant_columns, variant_columns = find_invariant_and_variant_columns(M)
+([1, 3], [2])
+
+"""
+function find_invariant_and_variant_columns(M::AbstractMatrix)
+    invariant_columns = Int[]
+    variant_columns = Int[]
+
+    for j in axes(M, 2)
+        col = @view M[:, j]
+        if all(x -> x == col[1], col)
+            push!(invariant_columns, j)
+        else
+            push!(variant_columns, j)
+        end
+    end
+    
+    invariant_columns, variant_columns
+end

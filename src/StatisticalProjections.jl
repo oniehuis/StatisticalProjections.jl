@@ -29,5 +29,6 @@ include("CPPLS_utilities.jl")
 export clr_transform
 export clr_transform!
 export labels_to_one_hot
+export find_invariant_and_variant_columns
 
 end # module StatisticalProjections

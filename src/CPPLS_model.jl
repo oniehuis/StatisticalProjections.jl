@@ -75,6 +75,11 @@ function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     qx = qr(X, ColumnNorm())
     qy = qr(Y, ColumnNorm())
 
+    println(size(qx.R))
+    println(any(isnan, qx.R))
+    println(any(isinf, qx.R))
+    println(minimum(abs, qx.R), maximum(abs, qx.R))
+
     # Compute the rank of X and Y from the R matrices of the QR decompositions
     dx = rank(qx.R)
     dy = rank(qy.R)
