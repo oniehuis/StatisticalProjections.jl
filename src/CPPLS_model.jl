@@ -688,7 +688,7 @@ function fit_cppls(
     X_tolerance::Real=1e-12,
     X_loading_weight_tolerance::Real=eps(Float64),
     gamma_optimization_tolerance::Real=1e-4,
-    tᵢ_squared_norm_tolerance::Real=1e-10
+    t_squared_norm_tolerance::Real=1e-10
     ) where {T1<:Real, T2<:Real, T3<:Real}
 
     (X_predictors, Y_responses, Y_combined, observation_weights, X̄_mean, Ȳ_mean,
@@ -716,7 +716,7 @@ function fit_cppls(
         X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ = process_component!(i, X_deflated, 
             X_loading_weightsᵢ, Y_responses, X_loading_weights, X_loadings, Y_loadings, 
             regression_coefficients, small_norm_flags, X_tolerance, 
-            X_loading_weight_tolerance, tᵢ_squared_norm_tolerance)
+            X_loading_weight_tolerance, t_squared_norm_tolerance)
     
         # Store additional results
         X_scores[:, i] = X_scoresᵢ
@@ -757,7 +757,7 @@ function fit_cppls_light(
     X_tolerance::Real=1e-12,
     X_loading_weight_tolerance::Real=eps(Float64),
     gamma_optimization_tolerance::Real=1e-4,
-    tᵢ_squared_norm_tolerance::Real=1e-10
+    t_squared_norm_tolerance::Real=1e-10
     ) where {T1<:Real, T2<:Real, T3<:Real}
 
     (X_predictors, Y_responses, Y_combined, observation_weights, X̄_mean, Ȳ_mean,
@@ -775,7 +775,7 @@ function fit_cppls_light(
         process_component!(i, X_deflated, X_loading_weightsᵢ, Y_responses,
             X_loading_weights, X_loadings, Y_loadings, regression_coefficients,
             small_norm_flags, X_tolerance, X_loading_weight_tolerance, 
-            tᵢ_squared_norm_tolerance)
+            t_squared_norm_tolerance)
 
     end
 
