@@ -531,27 +531,71 @@ function process_component!(
     X_loading_weightsᵢ .= (X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) 
         .* (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance))
 
+    println("X_loading_weightsᵢ: ")
+    println(any(isnan, X_loading_weightsᵢ))
+
     # Compute scores and loadings
     X_scoresᵢ = X_deflated * X_loading_weightsᵢ
+
+    println("X_scoresᵢ: ")
+    println(any(isnan, X_scoresᵢ))
+
     tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
+
+    println("tᵢ_squared_norm: ")
+    println(any(isnan, tᵢ_squared_norm))
+
     X_loadingsᵢ = (X_deflated' * X_scoresᵢ) / tᵢ_squared_norm
+
+    println("X_loadingsᵢ: ")
+    println(any(isnan, X_loadingsᵢ))
+    
     Y_loadingsᵢ = (Y_responses' * X_scoresᵢ) / tᵢ_squared_norm
+
+    println("Y_loadingsᵢ: ")
+    println(any(isnan, Y_loadingsᵢ))
 
     # Deflate
     X_deflated .-= X_scoresᵢ * X_loadingsᵢ'
 
+    println("X_deflated1: ")
+    println(any(isnan, X_deflated))
+
     # Zero out small norm columns
     small_norm_flags[i, :] .= vec(sum(abs.(X_deflated), dims=1) .< X_tolerance)
+
+    println("small_norm_flags: ")
+    println(any(isnan, small_norm_flags))
+
     X_deflated[:, small_norm_flags[i, :]] .= 0
+
+    println("X_deflated2: ")
+    println(any(isnan, X_deflated))
 
     # Store results
     X_loading_weights[:, i] .= X_loading_weightsᵢ
+
+    println("X_loading_weights: ")
+    println(any(isnan, X_loading_weights))
+
     X_loadings[:, i] .= X_loadingsᵢ
+
+    println("X_loadings: ")
+    println(any(isnan, X_loadings))
+
     Y_loadings[:, i] .= Y_loadingsᵢ
+
+    println("Y_loadings: ")
+    println(any(isnan, Y_loadings))
+
     regression_coefficients[:, :, i] .= (
         X_loading_weights[:, 1:i] *
         (inv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
     )
+
+    println("regression_coefficients: ")
+    println(any(isnan, regression_coefficients))
+
     X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
 end
 
@@ -710,40 +754,15 @@ function fit_cppls(
             gamma_values[i]) = (compute_cppls_weights(X_deflated, Y_combined, Y_responses, 
             observation_weights, gamma, gamma_optimization_tolerance))
 
-
-    println("X_loading_weightsᵢ: ")
-    println(any(isnan, X_loading_weightsᵢ))
-
-    println("max_canonical_correlations: ")
-    println(any(isnan, max_canonical_correlations))
-
-    println("canonical_coefficients: ")
-    println(any(isnan, canonical_coefficients))
-
         X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ = process_component!(i, X_deflated, 
             X_loading_weightsᵢ, Y_responses, X_loading_weights, X_loadings, Y_loadings, 
             regression_coefficients, small_norm_flags, X_tolerance, 
             X_loading_weight_tolerance)
     
-    println("X_deflated: ")
-    println(any(isnan, X_deflated))
-
-    println("X_scoresᵢ: ")
-    println(any(isnan, X_scoresᵢ))
-
-    println("tᵢ_squared_norm: ")
-    println(any(isnan, tᵢ_squared_norm))
-
-    println("Y_loadingsᵢ: ")
-    println(any(isnan, Y_loadingsᵢ))
-
         # Store additional results
         X_scores[:, i] = X_scoresᵢ
         X_score_norms[i] = tᵢ_squared_norm
         Y_scores[:, i] = Y_responses * Y_loadingsᵢ / (Y_loadingsᵢ' * Y_loadingsᵢ)
-
-    println("Y_scores1: ")
-    println(any(isnan, Y_scores))
 
         if i > 1
             # Orthogonalize Y_scores with respect to previous X_scores
@@ -752,40 +771,14 @@ function fit_cppls(
         fitted_values[:, :, i] = X_predictors * regression_coefficients[:, :, i]
     end
 
-    println("Y_scores2: ")
-    println(any(isnan, Y_scores))
-
-    println("fitted_values1: ")
-    println(any(isnan, fitted_values))
-
     # Compute residuals and variance explained
     fitted_values .+= reshape(repeat(Ȳ_mean, n_samples_X), n_samples_X, length(Ȳ_mean), 
         1)
-
-    println("fitted_values2: ")
-    println(any(isnan, fitted_values))
-
     Y_residuals = Y_responses .- fitted_values
-
-    println("Y_residuals: ")
-    println(any(isnan, Y_residuals))
-
     projection = X_loading_weights * inv(X_loadings' * X_loading_weights)
-
-    println("projection: ")
-    println(any(isnan, projection))
-
     X_variance_explained = vec(sum(X_loadings .* X_loadings, dims=1)) .* X_score_norms
-
-    println("X_variance_explained: ")
-    println(any(isnan, X_variance_explained))
-
     X_total_variance = sum(X_predictors .* X_predictors)
-
-
-    println("X_total_variance: ")
-    println(any(isnan, X_total_variance))
-
+    
     # Return the CPPLS object containing all results
     CPPLS(regression_coefficients, X_scores, X_loadings, X_loading_weights, Y_scores, 
         Y_loadings, projection, X̄_mean, Ȳ_mean, fitted_values, Y_residuals, 
