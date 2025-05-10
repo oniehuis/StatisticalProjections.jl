@@ -314,6 +314,7 @@ function nested_cv(
             center=center,
             X_tolerance=X_tolerance, 
             X_loading_weight_tolerance=X_loading_weight_tolerance,
+            t_squared_norm_tolerance=t_squared_norm_tolerance,
             gamma_optimization_tolerance=gamma_optimization_tolerance)
 
         # Predict the response labels for the test set
