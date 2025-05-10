@@ -572,10 +572,22 @@ function process_component!(
     X_loading_weights[:, i] .= X_loading_weightsᵢ
     X_loadings[:, i] .= X_loadingsᵢ
     Y_loadings[:, i] .= Y_loadingsᵢ
-    regression_coefficients[:, :, i] .= (
-        X_loading_weights[:, 1:i] *
-        (inv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
-    )
+
+    M = X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]
+
+    if rank(M) < min(size(M)...)
+        @warn "Rank-deficient matrix at component $i — using pinv()"
+        M_inv = pinv(M)  # handles singular/near-singular safely
+    else
+        M_inv = M \ I  # efficient solve when full rank
+    end
+
+    regression_coefficients[:, :, i] .= X_loading_weights[:, 1:i] * M_inv * Y_loadings[:, 1:i]'
+
+    # regression_coefficients[:, :, i] .= (
+    #     X_loading_weights[:, 1:i] *
+    #     (inv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
+    # )
 
     X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
 end
