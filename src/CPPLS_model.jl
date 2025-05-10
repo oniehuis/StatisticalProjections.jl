@@ -768,7 +768,16 @@ function fit_cppls(
     fitted_values .+= reshape(repeat(Ȳ_mean, n_samples_X), n_samples_X, length(Ȳ_mean), 
         1)
     Y_residuals = Y_responses .- fitted_values
-    projection = X_loading_weights * inv(X_loadings' * X_loading_weights)
+
+    M = X_loadings' * X_loading_weights
+    projection = if rank(M) < min(size(M)...)
+        @warn "Rank-deficient projection matrix — using pinv"
+        X_loading_weights * pinv(M)
+    else
+        X_loading_weights * (M \ I)
+    end
+
+    # projection = X_loading_weights * inv(X_loadings' * X_loading_weights)
     X_variance_explained = vec(sum(X_loadings .* X_loadings, dims=1)) .* X_score_norms
     X_total_variance = sum(X_predictors .* X_predictors)
 
