@@ -70,11 +70,18 @@ function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     # Get the number of rows and columns in the predictor matrix X
     n_rows, n_cols = size(X)
 
+    println("X: ")
+    println(size(X))
+    println(any(isnan, X))
+    println(any(isinf, X))
+    println(minimum(abs, X), maximum(abs, X))
+
     # Perform QR decomposition with column pivoting on both X and Y
     # This step orthogonalizes the columns of X and Y while preserving their rank
     qx = qr(X, ColumnNorm())
     qy = qr(Y, ColumnNorm())
 
+    println("qx: ")
     println(size(qx.R))
     println(any(isnan, qx.R))
     println(any(isinf, qx.R))
