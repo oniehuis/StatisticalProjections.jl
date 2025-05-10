@@ -545,6 +545,12 @@ function process_component!(
 
     tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
 
+    if isapprox(tᵢ_squared_norm, 0.0)
+        tᵢ_squared_norm += 1e-10
+    end
+
+    println(tᵢ_squared_norm)
+
     println("tᵢ_squared_norm: ")
     println(any(isnan, tᵢ_squared_norm))
 
