@@ -249,17 +249,8 @@ function evaluate_canonical_correlation(
     # Compute the X_projected as the product of X_deflated and initial_weights.
     # X_projected represents the projection of X_deflated onto the space defined by 
     # initial_weights.
-
-    println("X_deflated: ")
-    println(any(isnan, X_deflated))
-    println("initial_weights: ")
-    println(any(isnan, initial_weights))
-
     X_projected = X_deflated * initial_weights
 
-    println("X_projected: ")
-    println(any(isnan, X_projected))
-    println()
 
     # Perform canonical correlation analysis (CCA) on X_projected and Y_responses.
     max_canonical_correlation = cca_corr(X_projected, Y_responses, observation_weights)
@@ -333,18 +324,8 @@ function compute_best_gamma(
         end
     end
 
-    println("Vector")
-
-    println("gamma_values:", gamma_values)
-    println("canonical_correlations:", canonical_correlations)
-
     gamma = gamma_values[argmin(canonical_correlations)]
     canonical_correlation = maximum(-canonical_correlations)
-
-    println("gamma:", gamma)
-    println("canonical_correlation:", canonical_correlation)
-    println(gamma)
-    println(canonical_correlation)
 
     gamma, canonical_correlation
 end
@@ -451,6 +432,9 @@ function compute_cppls_weights(
     gamma::Union{<:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
     gamma_optimization_tolerance::Real)
 
+    println("X_deflated 1: ")
+    println(any(isnan, X_deflated))
+
     # Step 1: Compute correlations and standard deviations
     # C: Correlation matrix between columns of X and Y
     # S: Standard deviations of columns of X
@@ -466,6 +450,19 @@ function compute_cppls_weights(
 
     # Step 3: Normalize the standard deviations
     X_standard_deviations /= maximum(X_standard_deviations)
+
+    println("correlation_signs: ")
+    println(any(isnan, correlation_signs))
+
+    println("X_Y_correlations: ")
+    println(any(isnan, X_Y_correlations))
+
+    println("X_standard_deviations: ")
+    println(any(isnan, X_standard_deviations))
+
+    println("X_deflated 2: ")
+    println(any(isnan, X_deflated))
+    println()
 
     # Step 4: Compute the best vector of loadings
     compute_best_loadings(X_deflated, X_standard_deviations, X_Y_correlations, 
