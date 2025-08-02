@@ -1,6 +1,5 @@
 abstract type AbstractCPPLS end
 
-
 struct CPPLS{T1<:Real, T2<:Integer} <: AbstractCPPLS
     regression_coefficients::Array{T1, 3}
     X_scores::Matrix{T1}
@@ -513,7 +512,6 @@ function cppls_prepare_data(
     regression_coefficients, n_samples_X, n_targets_Y)
 end
 
-
 function process_component!(
     i::Integer,
     X_deflated::AbstractMatrix{<:Real},
@@ -783,70 +781,55 @@ function fit_cppls_light(
     CPPLSLight(regression_coefficients, X̄_mean, Ȳ_mean)
 end
 
+"""
+    predict(
+        cppls::CPPLS,
+        X::AbstractMatrix{<:Real},
+        n_components::Integer = size(cppls.regression_coefficients, 3)
+    ) -> Array{Float64, 3}
 
-# """
-#     predict(cppls::CPPLS, X::AbstractMatrix{<:Real}) -> Array{Float64, 3}
+Generate predictions from a fitted CPPLS model for a given input matrix `X`.
 
-# Generate predictions for a given input matrix `X` using a fitted CPPLS model.
+# Arguments
+- `cppls`: A fitted CPPLS model, containing regression coefficients, mean values of 
+  predictors and responses, etc.
+- `X`: A matrix of predictor variables of size `(n_samples_X, n_features)`.
+- `n_components` (optional): Number of CPPLS components to use for prediction. Defaults to 
+  the full number trained in the model. Must not exceed the number available.
 
-# # Arguments
-# - `cppls`: A fitted CPPLS model object containing regression coefficients, means, and other 
-#   model parameters.
-# - `X`: A matrix of predictor variables (observations × features) for which predictions are 
-#   to be made.
+# Returns
+- A 3-dimensional array of shape `(n_samples_X, n_targets_Y, n_components)`:
+  - `n_samples_X`: Number of input samples (rows of `X`)
+  - `n_targets_Y`: Number of target variables in the CPPLS model
+  - `n_components`: Number of components used for prediction
+  Each `[:,:,i]` slice corresponds to predictions using the first `i` components.
 
-# # Returns
-# - A 3D array of size `(n_samples_X, n_targets_Y, n_components)`:
-#   - `n_samples_X`: Number of rows in `X` (observations).
-#   - `n_targets_Y`: Number of response variables in the CPPLS model.
-#   - `n_components`: Number of components in the CPPLS model.
-#   Each slice along the third dimension corresponds to the predictions for a specific number
-#   of components.
+# Example
+```julia
+X = [0.5 1.2 0.8;
+     1.0 0.9 1.1;
+     0.7 1.5 0.6]
 
-# # Example
-# ```julia
-# # Example input data
-# X = [
-#     0.5  1.2  0.8;
-#     1.0  0.9  1.1;
-#     0.7  1.5  0.6
-# ]
+Y = [1 0;
+     0 1;
+     1 0]
 
-# # One-hot encoded response variable (Y)
-# Y = [
-#     1  0;
-#     0  1;
-#     1  0
-# ]
+cppls = fit_cppls(X, Y, 2)
 
-# # Fit a CPPLS model (example)
-# cppls = fit_cppls(X, Y, 2)
+predictions = predict(cppls, X)
 
-# # Generate predictions
-# predictions = predict(cppls, X)
-# 3×2×2 Array{Float64, 3}:
-# [:, :, 1] =
-#  0.86108     0.13892
-#  0.0317869   0.968213
-#  1.10713    -0.107134
-
-# [:, :, 2] =
-#  1.0  -5.55112e-17
-#  0.0   1.0
-#  1.0  -2.22045e-16
-
-# # Output:
-# # A 3D array of predictions with dimensions (n_samples_X, n_targets_Y, n_components)
-# """
+# Output: 3×2×2 Array{Float64, 3}
+"""
 function predict(
     cppls::AbstractCPPLS,
     X::AbstractMatrix{<:Real},
     n_components::T=size(cppls.regression_coefficients, 3)) where T<:Integer
 
-    # Get dimensions of input data and CPPLS model
-    n_samples_X, _ = size(X)
+    # Get the number of samples in X and the number of target variables in the model
+    n_samples_X = size(X, 1)
     n_targets_Y = size(cppls.Y_means, 2)
 
+    # Check that the requested number of components does not exceed what the model provides
     if n_components > size(cppls.regression_coefficients, 3)
         throw(DimensionMismatch(
             "n_components exceeds the number of components in the model"))
@@ -855,97 +838,102 @@ function predict(
     # Center the input data using the means from the CPPLS model
     X_centered = X .- cppls.X_means
 
-    # Preallocate array for fitted values (predictions)
+    # Preallocate the output array for predictions with the correct dimensions
     fitted_values = similar(X, n_samples_X, n_targets_Y, n_components)
 
-    # Compute predictions for each component
+    # For each component, compute predictions by applying the regression coefficients
     for i in 1:n_components
-        @views fitted_values[:, :, i] .= (X_centered * 
-            cppls.regression_coefficients[:, :, i] .+ cppls.Y_means)
+        @views fitted_values[:, :, i] .= 
+            (X_centered * cppls.regression_coefficients[:, :, i] .+ cppls.Y_means)
     end
 
-    # Return the array of predictions
+    # Return the array of predictions (n_samples_X × n_targets_Y × n_components)
     fitted_values
 end
 
-
-
-# function one_hot_argmax(predictions::AbstractArray{<:Real, 3})
-#     n_samples_X, n_targets_Y, _ = size(predictions)
-    
-#     # Sum over the last dimension to collapse it
-#     summed_predictions = dropdims(sum(predictions, dims=3), dims=3)
-    
-#     # Get the predicted classes by finding the index of the maximum value in each row
-#     max_indices = argmax(summed_predictions, dims=2)
-    
-#     # Convert CartesianIndex array to a 1D array of class indices
-#     predicted_classes = getindex.(max_indices, 2)
-    
-#     # Create a one-hot encoded matrix
-#     one_hot_encoded = zeros(Int, n_samples_X, n_targets_Y)
-#     for sample_idx in 1:n_samples_X
-#         one_hot_encoded[sample_idx, predicted_classes[sample_idx]] = 1
-#     end
-    
-#     one_hot_encoded
-# end
-
-
 """
-    one_hot_argmax(predictions::Array{<:Real, 3}) -> Matrix{Int}
+    predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real, 3}) -> Matrix{Int}
 
-Convert a 3D array of predictions into a one-hot encoded 2D matrix based on the `argmax` 
-along the second dimension.
+Convert a 3D array of predictions from a CPPLS model into a one-hot encoded 2D matrix, 
+assigning each sample to the class with the highest summed prediction across components, 
+after adjusting for overcounted means.
 
 # Arguments
+- `cppls`: A fitted CPPLS model object containing the mean response vector (`Y_means`).
 - `predictions`: A 3D array of predictions with dimensions `(n_samples_X, n_targets_Y, 
-  n_components)`. Typically, this represents predicted values for multiple samples, targets,
-  and components.
+  n_components)`. 
+  Typically, this represents predicted values for multiple samples, targets, and components.
 
 # Returns
 - A 2D matrix of size `(n_samples_X, n_targets_Y)` where each row is a one-hot encoded 
-vector indicating the target class with the highest summed prediction across components.
+  vector indicating the target class with the highest summed prediction across components.
+
+# Details
+- Sums predictions across all components for each sample and class.
+- Adjusts the summed predictions by subtracting `(n_components - 1)` times the mean 
+  response, to correct for repeated addition of the mean in each component.
+- For each sample, finds the class index with the highest adjusted prediction.
+- Converts the predicted class indices to a one-hot encoded matrix.
 
 # Example
 ```julia
 predictions = reshape([0.1, 0.3, 0.2, 0.4, 0.7, 0.3, 0.5, 0.2, 0.1, 0.6, 0.4, 0.2], 2, 3, 2)
-2×3×2 Array{Float64, 3}:
-[:, :, 1] =
- 0.1  0.2  0.7
- 0.3  0.4  0.3
-
-[:, :, 2] =
- 0.5  0.1  0.4
- 0.2  0.6  0.2
-
-result = one_hot_argmax(predictions)
+cppls = ... # a fitted CPPLS model with appropriate Y_means
+result = predictonehot(cppls, predictions)
 # Output:
 # 2×3 Matrix{Int}:
 # 0  0  1
 # 0  1  0
 """
-function one_hot_argmax(predictions::AbstractArray{<:Real, 3})
-    # Sum over the last dimension to collapse it
-    summed_predictions = dropdims(sum(predictions, dims=3), dims=3)
-    n_labels = size(summed_predictions, 2)
+function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real, 3})
+    # Get the number of components and classes from the predictions array
+    n_components = size(predictions, 3)
+    n_classes = size(predictions, 2)
 
-    # Get the predicted classes by finding the index of the maximum value in each row
-    predicted_classes = argmax(summed_predictions, dims=2)
-    label_indices = vec(getindex.(predicted_classes, 2))  # Convert CartesianIndex to integers
+    # Sum predictions across all components for each sample and class
+    Y_pred_sum = sum(predictions, dims=3)[:, :, 1]
 
-    # Use labels_to_one_hot to convert class labels to a one-hot encoded matrix
-    labels_to_one_hot(label_indices, n_labels)
+    # Adjust for overcounted Y_means (since each component adds it)
+    # Subtract (n_components - 1) times the mean response from the summed predictions
+    Y_pred_final = Y_pred_sum .- (n_components - 1) .* cppls.Y_means
+
+    # For each sample, find the index of the class with the highest predicted value
+    predicted_class_indices = argmax.(eachrow(Y_pred_final))
+
+    # Convert the predicted class indices to a one-hot encoded matrix
+    labels_to_one_hot(predicted_class_indices, n_classes)
 end
 
+"""
+    project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) -> AbstractMatrix
 
-function calculate_scores(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real})
-    # Ensure X is a Float64 matrix
-    X = convert(Matrix{Float64}, X)  
+Project input data onto the latent components of a fitted CPPLS model to compute scores.
 
-    # Center the input data
-    X = X .- cppls.X_means
+# Arguments
+- `cppls`: A fitted CPPLS model object containing the projection matrix (`projection`) and 
+  the mean of the predictor variables (`X_means`).
+- `X`: A matrix of predictor variables with dimensions `(n_samples_X, n_features)`. These 
+  should match the feature structure used to train the model.
 
-    # Initialize the scores array
-    X * cppls.projection
-end
+# Returns
+- A matrix of size `(n_samples_X, n_components)`, where each row contains the latent scores 
+  for the corresponding sample in `X`.
+
+# Details
+- Centers the input matrix by subtracting the training mean `X_means`.
+- Multiplies the centered data by the model's projection matrix to obtain component scores.
+
+# Example
+```julia
+X = [0.5 1.2 0.8;
+     1.0 0.9 1.1;
+     0.7 1.5 0.6]
+
+cppls = fit_cppls(X, Y, 2)  # assuming Y is defined
+scores = project(cppls, X)
+
+# Output:
+# 3×2 Matrix{Float64} (if model was trained with Float64)
+"""
+project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) = 
+    (X .- cppls.X_means) * cppls.projection

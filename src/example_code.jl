@@ -316,7 +316,7 @@ for i in axes(df_non_pool_seq_F.IM, 1)
     X[i, :] = vec(df_non_pool_seq_F.IM[i])
 end
 
-scores = calculate_scores(cppls, X)
+scores = project(cppls, X)
 
 fig3 = Figure() # ; size=(1000, 600))
 ax1 = Axis(fig3[1, 1], xlabel="Component 1", ylabel="Component 2")

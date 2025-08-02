@@ -13,8 +13,8 @@ export CPPLSLight
 export fit_cppls
 export fit_cppls_light
 export predict
-export one_hot_argmax
-export calculate_scores
+export predictonehot
+export project
 export cca_coeffs_and_corr
 
 include("CPPLS_cv.jl")
@@ -26,8 +26,6 @@ export nmc
 
 include("CPPLS_utilities.jl")
 
-export clr_transform
-export clr_transform!
 export labels_to_one_hot
 export find_invariant_and_variant_columns
 

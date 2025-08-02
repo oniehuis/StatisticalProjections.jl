@@ -137,7 +137,7 @@ function optimize_num_latent_variables(
             gamma_optimization_tolerance=gamma_optimization_tolerance)
 
         for (num_components_idx, num_components) in enumerate(1:max_components)
-            Y_pred = one_hot_argmax(predict(model, X_validation, num_components))
+            Y_pred = predictonehot(model, predict(model, X_validation, num_components))
             misclassification_costs[num_components_idx] = nmc(Y_validation, Y_pred, 
                 weighted_nmc)
         end
@@ -318,7 +318,7 @@ function nested_cv(
             gamma_optimization_tolerance=gamma_optimization_tolerance)
 
         # Predict the response labels for the test set
-        predicted_labels = one_hot_argmax(predict(final_model, X_test))
+        predicted_labels = predictonehot(final_model, predict(final_model, X_test))
 
         # Compute accuracy for the current outer fold
         outer_fold_accuracies[outer_fold_idx] = 1 - nmc(predicted_labels, Y_test, weighted_nmc)
