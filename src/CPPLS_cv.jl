@@ -156,85 +156,85 @@ function optimize_num_latent_variables(
 end
 
 
-"""
-    nested_cv(X_predictors::AbstractMatrix{<:Real}, 
-              Y_responses::AbstractMatrix{<:Real};
-              gamma::Union{<:T1, <:NTuple{2, T1}, <:AbstractVector{Union{<:T1, 
-                <:NTuple{2, T1}}}}=0.5,
-              observation_weights::Union{AbstractVector{T2}, Nothing}=nothing,
-              Y_auxiliary::Union{AbstractMatrix{T3}, Nothing}=nothing,
-              center::Bool=true,
-              X_tolerance::Real=1e-12,
-              X_loading_weight_tolerance::Real=eps(Float64),
-              gamma_optimization_tolerance::Real=1e-4,
-              num_outer_folds::Integer=8,
-              num_outer_folds_repeats::Integer=num_outer_folds,
-              num_inner_folds::Integer=7,
-              num_inner_folds_repeats::Integer=num_inner_folds,
-              max_components::Integer=5,
-              weighted_nmc::Bool=true,
-              rng::AbstractRNG=Random.GLOBAL_RNG,
-              verbose::Bool=true) 
-              -> Tuple{Vector{Float64}, Vector{Int}}
+# """
+#     nested_cv(X_predictors::AbstractMatrix{<:Real}, 
+#               Y_responses::AbstractMatrix{<:Real};
+#               gamma::Union{<:T1, <:NTuple{2, T1}, <:AbstractVector{Union{<:T1, 
+#                 <:NTuple{2, T1}}}}=0.5,
+#               observation_weights::Union{AbstractVector{T2}, Nothing}=nothing,
+#               Y_auxiliary::Union{AbstractMatrix{T3}, Nothing}=nothing,
+#               center::Bool=true,
+#               X_tolerance::Real=1e-12,
+#               X_loading_weight_tolerance::Real=eps(Float64),
+#               gamma_optimization_tolerance::Real=1e-4,
+#               num_outer_folds::Integer=8,
+#               num_outer_folds_repeats::Integer=num_outer_folds,
+#               num_inner_folds::Integer=7,
+#               num_inner_folds_repeats::Integer=num_inner_folds,
+#               max_components::Integer=5,
+#               weighted_nmc::Bool=true,
+#               rng::AbstractRNG=Random.GLOBAL_RNG,
+#               verbose::Bool=true) 
+#               -> Tuple{Vector{Float64}, Vector{Int}}
 
-Perform nested cross-validation to evaluate the predictive performance of a CPPLS-DA model 
-and determine the optimal number of latent variables.
+# Perform nested cross-validation to evaluate the predictive performance of a CPPLS-DA model 
+# and determine the optimal number of latent variables.
 
-# Arguments
-- `X_predictors`: Predictor matrix (samples × features).
-- `Y_responses`: Response matrix (samples × classes or targets), assumed to be one-hot 
-    encoded.
-- `gamma`: Regularization parameter(s). Can be a scalar, a tuple for range search, or a 
-    vector of values.
-- `observation_weights`: Optional weights for training samples.
-- `Y_auxiliary`: Optional auxiliary response matrix.
-- `center`: Whether to mean-center the predictors.
-- `X_tolerance`: Tolerance for convergence in predictor matrix.
-- `X_loading_weight_tolerance`: Tolerance for convergence of loading weights.
-- `gamma_optimization_tolerance`: Tolerance for `gamma` optimization.
-- `num_outer_folds`: Number of outer CV folds.
-- `num_outer_folds_repeats`: Number of times to repeat outer CV.
-- `num_inner_folds`: Number of inner CV folds used to estimate the number of latent 
-   variables/components.
-- `num_inner_folds_repeats`: Number of repetitions of inner CV.
-- `max_components`: Maximum number of latent variables to search over.
-- `weighted_nmc`: Whether to use class-weighted normalized misclassification.
-- `rng`: Random number generator used for reproducibility.
-- `verbose`: Whether to print progress messages.
+# # Arguments
+# - `X_predictors`: Predictor matrix (samples × features).
+# - `Y_responses`: Response matrix (samples × classes or targets), assumed to be one-hot 
+#     encoded.
+# - `gamma`: Regularization parameter(s). Can be a scalar, a tuple for range search, or a 
+#     vector of values.
+# - `observation_weights`: Optional weights for training samples.
+# - `Y_auxiliary`: Optional auxiliary response matrix.
+# - `center`: Whether to mean-center the predictors.
+# - `X_tolerance`: Tolerance for convergence in predictor matrix.
+# - `X_loading_weight_tolerance`: Tolerance for convergence of loading weights.
+# - `gamma_optimization_tolerance`: Tolerance for `gamma` optimization.
+# - `num_outer_folds`: Number of outer CV folds.
+# - `num_outer_folds_repeats`: Number of times to repeat outer CV.
+# - `num_inner_folds`: Number of inner CV folds used to estimate the number of latent 
+#    variables/components.
+# - `num_inner_folds_repeats`: Number of repetitions of inner CV.
+# - `max_components`: Maximum number of latent variables to search over.
+# - `weighted_nmc`: Whether to use class-weighted normalized misclassification.
+# - `rng`: Random number generator used for reproducibility.
+# - `verbose`: Whether to print progress messages.
 
-# Returns
-- `outer_fold_accuracies`: A vector of classification accuracies (or 1 - NMC) for each 
-    outer fold.
-- `optimal_num_latent_variables`: A vector of the selected number of latent variables per 
-    outer fold.
+# # Returns
+# - `outer_fold_accuracies`: A vector of classification accuracies (or 1 - NMC) for each 
+#     outer fold.
+# - `optimal_num_latent_variables`: A vector of the selected number of latent variables per 
+#     outer fold.
 
-# Description
-Nested cross-validation involves:
-1. **Outer folds** for evaluating generalization error.
-2. **Inner folds** for tuning hyperparameters (e.g., number of latent variables).
+# # Description
+# Nested cross-validation involves:
+# 1. **Outer folds** for evaluating generalization error.
+# 2. **Inner folds** for tuning hyperparameters (e.g., number of latent variables).
 
-In each outer fold:
-- The model is trained and optimized on the training portion (using inner folds).
-- It is evaluated on the held-out test data using classification accuracy (via `nmc`).
+# In each outer fold:
+# - The model is trained and optimized on the training portion (using inner folds).
+# - It is evaluated on the held-out test data using classification accuracy (via `nmc`).
 
-# Example
-```julia
-X = rand(100, 10)
-Y = labels_to_one_hot(rand(1:3, 100), 3)  # one-hot encoding for 3-class classification
+# # Example
+# ```julia
+# X = rand(100, 10)
+# Y = labels_to_one_hot(rand(1:3, 100), 3)  # one-hot encoding for 3-class classification
 
-accs, opt_lv = nested_cv(
-    X, Y;
-    gamma=0.5,
-    num_outer_folds=5,
-    num_inner_folds=3,
-    max_components=10,
-    verbose=true
-)
+# accs, opt_lv = nested_cv(
+#     X, Y;
+#     gamma=0.5,
+#     num_outer_folds=5,
+#     num_inner_folds=3,
+#     max_components=10,
+#     verbose=true
+# )
 
-println("Accuracies: ", accs)
-println("Optimal latent variables: ", opt_lv)
-```
-"""
+# println("Accuracies: ", accs)
+# println("Optimal latent variables: ", opt_lv)
+# ```
+# """
 function nested_cv(
     X_predictors::AbstractMatrix{<:Real}, 
     Y_responses::AbstractMatrix{<:Real};
@@ -332,90 +332,90 @@ function nested_cv(
 end
 
 
-"""
-    nested_cv_permutation(X_predictors::AbstractMatrix{<:Real}, 
-                          Y_responses::AbstractMatrix{<:Real};
-                          gamma::Union{<:T1, <:NTuple{2, T1}, <:AbstractVector{<:Union{<:T1, 
-                            <:NTuple{2, T1}}}}=0.5,
-                          observation_weights::Union{AbstractVector{T2}, Nothing}=nothing,
-                          Y_auxiliary::Union{AbstractMatrix{T3}, Nothing}=nothing,
-                          center::Bool=true,
-                          X_tolerance::Real=1e-12,
-                          X_loading_weight_tolerance::Real=eps(Float64),
-                          gamma_optimization_tolerance::Real=1e-4,
-                          num_outer_folds::Integer=9,
-                          num_outer_folds_repeats::Integer=num_outer_folds,
-                          num_inner_folds::Integer=8,
-                          num_inner_folds_repeats::Integer=num_inner_folds,
-                          max_components::Integer=5,
-                          weighted_nmc::Bool=true,
-                          num_permutations::Integer=999,
-                          rng::AbstractRNG=Random.GLOBAL_RNG,
-                          verbose::Bool=true)
-                          -> Vector{Float64}
+# """
+#     nested_cv_permutation(X_predictors::AbstractMatrix{<:Real}, 
+#                           Y_responses::AbstractMatrix{<:Real};
+#                           gamma::Union{<:T1, <:NTuple{2, T1}, <:AbstractVector{<:Union{<:T1, 
+#                             <:NTuple{2, T1}}}}=0.5,
+#                           observation_weights::Union{AbstractVector{T2}, Nothing}=nothing,
+#                           Y_auxiliary::Union{AbstractMatrix{T3}, Nothing}=nothing,
+#                           center::Bool=true,
+#                           X_tolerance::Real=1e-12,
+#                           X_loading_weight_tolerance::Real=eps(Float64),
+#                           gamma_optimization_tolerance::Real=1e-4,
+#                           num_outer_folds::Integer=9,
+#                           num_outer_folds_repeats::Integer=num_outer_folds,
+#                           num_inner_folds::Integer=8,
+#                           num_inner_folds_repeats::Integer=num_inner_folds,
+#                           max_components::Integer=5,
+#                           weighted_nmc::Bool=true,
+#                           num_permutations::Integer=999,
+#                           rng::AbstractRNG=Random.GLOBAL_RNG,
+#                           verbose::Bool=true)
+#                           -> Vector{Float64}
 
-Perform permutation testing using nested cross-validation to assess the statistical 
-significance of a CPPLS-DA model’s predictive performance.
+# Perform permutation testing using nested cross-validation to assess the statistical 
+# significance of a CPPLS-DA model’s predictive performance.
 
-# Arguments
-- `X_predictors`: Predictor matrix (samples × features).
-- `Y_responses`: Response matrix (samples × targets), assumed one-hot encoded.
-- `gamma`: Regularization parameter(s). Can be scalar, tuple, or array of values.
-- `observation_weights`: Optional weights for training samples.
-- `Y_auxiliary`: Optional auxiliary response matrix.
-- `center`: Whether to mean-center the predictors.
-- `X_tolerance`: Tolerance for convergence in predictor matrix.
-- `X_loading_weight_tolerance`: Tolerance for convergence of loading weights.
-- `gamma_optimization_tolerance`: Tolerance for `gamma` optimization.
-- `num_outer_folds`: Number of outer CV folds.
-- `num_outer_folds_repeats`: Number of times to repeat outer CV.
-- `num_inner_folds`: Number of inner CV folds used to estimate the number of latent 
-   variables/components.
-- `num_inner_folds_repeats`: Number of repetitions of inner CV.
-- `max_components`: Maximum number of latent variables to search over.
-- `weighted_nmc`: Whether to use class-weighted normalized misclassification.
-- `num_permutations`: Number of random permutations of the response labels.
-- `rng`: Random number generator used for reproducibility.
-- `verbose`: Whether to print progress during permutations.
+# # Arguments
+# - `X_predictors`: Predictor matrix (samples × features).
+# - `Y_responses`: Response matrix (samples × targets), assumed one-hot encoded.
+# - `gamma`: Regularization parameter(s). Can be scalar, tuple, or array of values.
+# - `observation_weights`: Optional weights for training samples.
+# - `Y_auxiliary`: Optional auxiliary response matrix.
+# - `center`: Whether to mean-center the predictors.
+# - `X_tolerance`: Tolerance for convergence in predictor matrix.
+# - `X_loading_weight_tolerance`: Tolerance for convergence of loading weights.
+# - `gamma_optimization_tolerance`: Tolerance for `gamma` optimization.
+# - `num_outer_folds`: Number of outer CV folds.
+# - `num_outer_folds_repeats`: Number of times to repeat outer CV.
+# - `num_inner_folds`: Number of inner CV folds used to estimate the number of latent 
+#    variables/components.
+# - `num_inner_folds_repeats`: Number of repetitions of inner CV.
+# - `max_components`: Maximum number of latent variables to search over.
+# - `weighted_nmc`: Whether to use class-weighted normalized misclassification.
+# - `num_permutations`: Number of random permutations of the response labels.
+# - `rng`: Random number generator used for reproducibility.
+# - `verbose`: Whether to print progress during permutations.
 
-# Returns
-- `permutation_accuracies`: A vector of mean accuracies (or 1 - NMC) from each permutation 
-   run.
+# # Returns
+# - `permutation_accuracies`: A vector of mean accuracies (or 1 - NMC) from each permutation 
+#    run.
 
-# Description
-This function performs a permutation test using nested cross-validation to build a null 
-distribution of model performance. In each permutation:
-- The response labels (`Y_responses`, `Y_auxiliary`) are randomly shuffled.
-- Nested CV is performed with the permuted labels to compute a baseline performance under 
-  the null hypothesis.
-- This is repeated `num_permutations` times to yield a distribution of accuracies.
+# # Description
+# This function performs a permutation test using nested cross-validation to build a null 
+# distribution of model performance. In each permutation:
+# - The response labels (`Y_responses`, `Y_auxiliary`) are randomly shuffled.
+# - Nested CV is performed with the permuted labels to compute a baseline performance under 
+#   the null hypothesis.
+# - This is repeated `num_permutations` times to yield a distribution of accuracies.
 
-This is useful for estimating the probability of achieving the observed model performance 
-by chance, thereby enabling statistical significance testing.
+# This is useful for estimating the probability of achieving the observed model performance 
+# by chance, thereby enabling statistical significance testing.
 
-# Notes
-- The input `Y_responses` must be one-hot encoded.
-- This function relies on the `nested_cv` function for cross-validation logic.
-- The output can be compared to actual model accuracy to compute p-values.
+# # Notes
+# - The input `Y_responses` must be one-hot encoded.
+# - This function relies on the `nested_cv` function for cross-validation logic.
+# - The output can be compared to actual model accuracy to compute p-values.
 
-# Example
-```julia
-X = rand(100, 10)
-Y = labels_to_one_hot(rand(1:3, 100), 3)
+# # Example
+# ```julia
+# X = rand(100, 10)
+# Y = labels_to_one_hot(rand(1:3, 100), 3)
 
-permutation_scores = nested_cv_permutation(
-    X, Y;
-    gamma=0.5,
-    num_permutations=100,
-    num_outer_folds=5,
-    num_inner_folds=3,
-    max_components=5,
-    verbose=true
-)
+# permutation_scores = nested_cv_permutation(
+#     X, Y;
+#     gamma=0.5,
+#     num_permutations=100,
+#     num_outer_folds=5,
+#     num_inner_folds=3,
+#     max_components=5,
+#     verbose=true
+# )
 
-println("Mean permutation accuracy: ", mean(permutation_scores))
-```
-"""
+# println("Mean permutation accuracy: ", mean(permutation_scores))
+# ```
+# """
 function nested_cv_permutation(
     X_predictors::AbstractMatrix{<:Real}, 
     Y_responses::AbstractMatrix{<:Real};
@@ -485,41 +485,41 @@ function nested_cv_permutation(
 end
 
 
-"""
-    calculate_p_value(permutation_accuracies::AbstractVector{<:Real}, 
-                      model_accuracy::Float64) -> Float64
+# """
+#     calculate_p_value(permutation_accuracies::AbstractVector{<:Real}, 
+#                       model_accuracy::Float64) -> Float64
 
-Calculate the p-value to assess the statistical significance of the model's accuracy based 
-on permutation testing.
+# Calculate the p-value to assess the statistical significance of the model's accuracy based 
+# on permutation testing.
 
-# Arguments
-- `permutation_accuracies::AbstractVector{<:Real}`: A vector of accuracies obtained from 
-   models trained on permuted response labels.
-- `model_accuracy::Float64`: The accuracy of the model trained on the original 
-   (non-permuted) response labels.
+# # Arguments
+# - `permutation_accuracies::AbstractVector{<:Real}`: A vector of accuracies obtained from 
+#    models trained on permuted response labels.
+# - `model_accuracy::Float64`: The accuracy of the model trained on the original 
+#    (non-permuted) response labels.
 
-# Returns
-- `p_value::Float64`: The p-value representing the probability of observing the model's 
-   accuracy (or better) by random chance.
+# # Returns
+# - `p_value::Float64`: The p-value representing the probability of observing the model's 
+#    accuracy (or better) by random chance.
 
-# Description
-The p-value is calculated as the proportion of permutation accuracies that are less than or 
-equal to the model's accuracy. This provides a measure of how likely it is to achieve the 
-observed accuracy by chance, under the null hypothesis that the response labels are 
-unrelated to the predictors.
+# # Description
+# The p-value is calculated as the proportion of permutation accuracies that are less than or 
+# equal to the model's accuracy. This provides a measure of how likely it is to achieve the 
+# observed accuracy by chance, under the null hypothesis that the response labels are 
+# unrelated to the predictors.
 
-The formula for the p-value is:
-p_value = (number of permutation accuracies ≤ model_accuracy) / 
-    (total number of permutations + 1)
+# The formula for the p-value is:
+# p_value = (number of permutation accuracies ≤ model_accuracy) / 
+#     (total number of permutations + 1)
 
-# Example
-```julia
-permutation_accuracies = [0.6, 0.55, 0.58, 0.62, 0.57]
-model_accuracy = 0.7
+# # Example
+# ```julia
+# permutation_accuracies = [0.6, 0.55, 0.58, 0.62, 0.57]
+# model_accuracy = 0.7
 
-p_value = calculate_p_value(permutation_accuracies, model_accuracy)
-println("P-value: ", p_value)
-"""
+# p_value = calculate_p_value(permutation_accuracies, model_accuracy)
+# println("P-value: ", p_value)
+# """
 function calculate_p_value(
     permutation_accuracies::AbstractVector{<:Real}, 
     model_accuracy::Float64)
