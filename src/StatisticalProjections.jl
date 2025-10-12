@@ -28,5 +28,7 @@ include("CPPLS_utilities.jl")
 
 export labels_to_one_hot
 export find_invariant_and_variant_columns
+export separationaxis
+export fisherztrack
 
 end # module StatisticalProjections
