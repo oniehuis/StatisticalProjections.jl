@@ -5,7 +5,11 @@ DocMeta.setdocmeta!(StatisticalProjections, :DocTestSetup, :(using StatisticalPr
 makedocs(
 	sitename = "StatisticalProjections",
 	format = Documenter.HTML(),
-	modules = [StatisticalProjections]
+	modules = [StatisticalProjections],
+	authors = "Oliver Niehuis",
+	pages = [
+        "Home" => "index.md"
+    ]
 )
 
 deploydocs(
