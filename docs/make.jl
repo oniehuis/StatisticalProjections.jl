@@ -8,7 +8,10 @@ makedocs(
 	modules = [StatisticalProjections],
 	authors = "Oliver Niehuis",
 	pages = [
-        "Home" => "index.md"
+        "Home" => "index.md",
+		"Internals" => Any[
+            "internals/base.md",
+		    ]
     ]
 )
 
