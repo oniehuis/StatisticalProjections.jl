@@ -1,4 +1,4 @@
-# Base
+# Statistics
 
 ```@docs
 StatisticalProjections.fisherztrack

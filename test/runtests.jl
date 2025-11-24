@@ -1,6 +1,10 @@
 using StatisticalProjections
 using Test
 
-@testset "StatisticalProjections.jl" begin
-    # Write your tests here.
+@testset "CPPLS/types.jl" begin
+    include(joinpath("CPPLS", "types.jl"))
+end
+
+@testset "CPPLS/predict" begin
+    include(joinpath("CPPLS", "predict.jl"))
 end

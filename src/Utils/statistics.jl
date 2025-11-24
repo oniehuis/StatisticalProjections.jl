@@ -1,3 +1,10 @@
+"""
+    robustcor(x::AbstractVector, y::AbstractVector)
+
+Robust correlation helper used inside projection diagnostics. Returns the
+Pearson correlation between `x` and `y`, falling back to `0.0` when either input
+is constant or when the computed value is not finite (e.g. `NaN` or `Inf`).
+"""
 @inline function robustcor(x::AbstractVector, y::AbstractVector)
     (std(x) == 0 || std(y) == 0) && return 0.0
     c = cor(x, y)
@@ -5,6 +12,21 @@
 end
 
 
+"""
+    fisherztrack(X::AbstractArray{<:Real,3}, scores::AbstractVector; weights=:mean)
+
+Track how strongly each (axis₁, axis₂) slice of `X` correlates with the provided
+`scores` vector. For every axis₁ value we compute the Fisher z-transform of the
+robust correlations across axis₂, optionally weighting each slice by its mean,
+and invert the transform to obtain a stabilized correlation estimate per axis₁.
+
+Arguments
+- `X`: 3-D tensor whose first axis matches the observation axis of `scores`.
+- `scores`: response to correlate with every slice in `X`.
+- `weights`: choose `:mean` to weight by the slice means or `:none` for equal weights.
+
+Returns a vector of correlations with length `size(X, 2)`.
+"""
 function fisherztrack(X::AbstractArray{<:Real,3},
                       scores::AbstractVector{<:Real};
                       weights::Symbol=:mean)
@@ -41,6 +63,19 @@ function fisherztrack(X::AbstractArray{<:Real,3},
 end
 
 
+"""
+    separationaxis(Xscores::AbstractMatrix, Y::AbstractMatrix;
+                   method=:centroid, positive_class=1)
+
+Derive a one-dimensional separation axis from latent scores (`Xscores`) and a
+binary one-hot response matrix `Y`. The returned tuple `(direction, scores)`
+contains the unit direction vector and the resulting signed projection scores
+with the `positive_class` oriented toward larger values.
+
+Keyword `method` selects either `:centroid` (difference of class means) or
+`:lda` (Fisher LDA using pooled covariance) for multi-axis inputs. For a single
+axis, the function simply ensures the orientation matches `positive_class`.
+"""
 function separationaxis(Xscores::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
                         method::Symbol=:centroid, positive_class::T=1) where {T<:Integer}
 

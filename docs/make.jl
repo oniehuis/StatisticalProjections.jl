@@ -9,8 +9,12 @@ makedocs(
 	authors = "Oliver Niehuis",
 	pages = [
         "Home" => "index.md",
-		"Internals" => Any[
-            "internals/base.md",
+		"CPPLS" => Any[
+            "CPPLS/types.md",
+			"CPPLS/predict.md",
+		    ],
+		"Utils" => Any[
+			"Utils/statistics.md",
 		    ]
     ]
 )
