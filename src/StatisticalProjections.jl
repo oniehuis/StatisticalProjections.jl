@@ -6,7 +6,18 @@ using Random
 using Statistics
 using StatsBase
 
-include("CPPLS_model.jl")
+include("Utils/encoding.jl")
+include("Utils/matrix.jl")
+include("Utils/statistics.jl")
+
+include("CPPLS/types.jl")
+include("CPPLS/preprocessing.jl")
+include("CPPLS/cca.jl")
+include("CPPLS/fit.jl")
+include("CPPLS/predict.jl")
+
+include("Evaluation/matrics.jl")
+include("Evaluation/crossvalidation.jl")
 
 export CPPLS
 export CPPLSLight
@@ -17,16 +28,13 @@ export predictonehot
 export project
 export cca_coeffs_and_corr
 
-include("CPPLS_cv.jl")
-export nested_cv_with_permutation
 export nested_cv_permutation
 export calculate_p_value
 export nested_cv
 export nmc
 
-include("CPPLS_utilities.jl")
-
 export labels_to_one_hot
+export one_hot_to_labels
 export find_invariant_and_variant_columns
 export separationaxis
 export fisherztrack
