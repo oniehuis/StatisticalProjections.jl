@@ -43,6 +43,8 @@ const CROSSVAL_Y = [
     @test length(folds) == 3
     @test sort!(reduce(vcat, folds)) == collect(1:length(strata))
     @test all(length(batch) == 2 for batch in folds)
+    @test_throws ArgumentError StatisticalProjections.random_batch_indices(strata, 0)
+    @test_throws ArgumentError StatisticalProjections.random_batch_indices(strata, length(strata) + 1)
 end
 
 @testset "optimize_num_latent_variables selects component count" begin
