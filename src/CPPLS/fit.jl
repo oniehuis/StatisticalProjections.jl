@@ -1,160 +1,81 @@
-function process_component!(
-    i::Integer,
-    X_deflated::AbstractMatrix{<:Real},
-    X_loading_weightsᵢ::AbstractVector{<:Real},
-    Y_responses::AbstractMatrix{<:Real},
-    X_loading_weights::AbstractMatrix{<:Real},
-    X_loadings::AbstractMatrix{<:Real},
-    Y_loadings::AbstractMatrix{<:Real},
-    regression_coefficients::Array{<:Real,3},
-    small_norm_flags::AbstractMatrix{Bool},
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    tᵢ_squared_norm_tolerance::Real)
+"""
+    fit_cppls(
+        X::AbstractMatrix{<:Real},
+        Y::AbstractMatrix{<:Real},
+        n_components::Integer;
+        gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}}=0.5,
+        observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
+        Y_auxiliary::Union{AbstractMatrix{<:Real}, Nothing}=nothing,
+        center::Bool=true,
+        X_tolerance::Real=1e-12,
+        X_loading_weight_tolerance::Real=eps(Float64), 
+        gamma_optimization_tolerance::Real=1e-4,
+        t_squared_norm_tolerance::Real=1e-10)
 
-    X_loading_weightsᵢ .= (X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) 
-        .* (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance))
+Fit a Canonical Powered Partial Least Squares (CPPLS) model.
 
-    X_scoresᵢ = X_deflated * X_loading_weightsᵢ
-    tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
+# Arguments
+- `X`: A matrix of predictor variables (observations × features). `NA`s and `Inf`s are not 
+  allowed.
+- `Y`: A matrix of response variables (observations × targets). `NA`s and `Inf`s are not 
+  allowed.
 
-    if isapprox(tᵢ_squared_norm, 0.0)
-        tᵢ_squared_norm += tᵢ_squared_norm_tolerance
-    end
-    X_loadingsᵢ = (X_deflated' * X_scoresᵢ) / tᵢ_squared_norm
-    Y_loadingsᵢ = (Y_responses' * X_scoresᵢ) / tᵢ_squared_norm
+# Optional Positional Argument
+- `n_components`: The number of components to extract in the CPPLS model. Defaults to 2.
 
-    X_deflated .-= X_scoresᵢ * X_loadingsᵢ'
+# Optional Keyword Arguments
+- `gamma`: Either (i) a fixed power parameter (`γ`), (ii) a `(lo, hi)` tuple describing the
+  bounds for per-component optimization, or (iii) a vector mixing both forms. Defaults to
+  `0.5`, i.e. no optimization.
+- `observation_weights`: A vector of individual weights for the observations (e.g., 
+  experimental data or samples). Defaults to `nothing`.
+- `Y_auxiliary: A matrix of auxiliary response variables containing additional information 
+  about the observations. Defaults to `nothing`.
+- `center`: Whether to mean-center the `X` and `Y` matrices. Defaults to `true`.
+- `X_tolerance`: Tolerance for small norms in `X`. Columns of `X` with norms below this 
+  threshold are set to zero during deflation. Defaults to `1e-12`.
+- `X_loading_weight_tolerance`: Tolerance for small weights. Elements of the weight vector 
+  below this threshold are set to zero. Defaults to `eps(Float64)`.
+- `gamma_optimization_tolerance`: Tolerance for the optimization process when determining 
+   the power parameter (`γ`). Defaults to `1e-4`.
+- `t_squared_norm_tolerance`: Small positive value added to near-zero score norms to keep
+  downstream divisions stable. Defaults to `1e-10`.
 
-    small_norm_flags[i, :] .= vec(sum(abs.(X_deflated), dims=1) .< X_tolerance)
-    X_deflated[:, small_norm_flags[i, :]] .= 0
+# Returns
+A `CPPLS` object containing the following fields:
+- `regression_coefficients`: A 3D array of regression coefficients for 1, ..., 
+  `n_components`.
+- `X_scores`: A matrix of scores (latent variables) for the predictor matrix `X`.
+- `X_loadings`: A matrix of loadings for the predictor matrix `X`.
+- `X_loading_weights`: A matrix of loading weights for the predictor matrix `X`.
+- `Y_scores`: A matrix of scores (latent variables) for the response matrix `Y`.
+- `Y_loadings`: A matrix of loadings for the response matrix `Y`.
+- `projection`: The projection matrix used to convert `X` to scores.
+- `X_means`: A vector of means of the `X` variables (used for centering).
+- `Y_means`: A vector of means of the `Y` variables (used for centering).
+- `fitted_values`: An array of fitted values for the response matrix `Y`.
+- `residuals`: An array of residuals for the response matrix `Y`.
+- `X_variance`: A vector containing the amount of variance in `X` explained by each 
+   component.
+- `X_total_variance`: The total variance in `X`.
+- `gammas`: The power parameter (`γ`) values obtained during power optimization.
+- `canonical_correlations`: Canonical correlation values for each component.
+- `small_norm_indices`: Indices of explanatory variables with norms close to or equal to 
+   zero.
+- `canonical_coefficients`: A matrix containing the canonical coefficients (`a`) from 
+  canonical correlation analysis (`cor(Za, Yb)`).
 
-    X_loading_weights[:, i] .= X_loading_weightsᵢ
-    X_loadings[:, i] .= X_loadingsᵢ
-    Y_loadings[:, i] .= Y_loadingsᵢ
-    regression_coefficients[:, :, i] .= (X_loading_weights[:, 1:i] * 
-        pinv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
+# Notes
+- The CPPLS model is an extension of Partial Least Squares (PLS) that incorporates 
+  canonical correlation analysis (CCA) and power parameter optimization to maximize the 
+  correlation between linear combinations of `X` and `Y`.
+- The power parameter (`γ`) controls the balance between variance maximization and 
+  correlation maximization. It is optimized within the specified bounds (`gamma_bounds`).
+- If `Y_auxiliary` is provided, it is concatenated with `Y` to form a combined response 
+  matrix (`Y_combined`), which is used during the fitting process.
 
-    X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
-end
-
-# """
-#     fit_cppls(
-#         X::AbstractMatrix{<:Real},
-#         Y::AbstractMatrix{<:Real},
-#         n_components::Integer;
-#         gamma_bounds::Union{AbstractVector{<:NTuple{2, <:Real}}, Northing}=nothing,
-#         observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-#         Y_auxiliary::Union{AbstractMatrix{<:Real}, Nothing}=nothing,
-#         center::Bool=true,
-#         X_tolerance::Real=1e-12,
-#         X_loading_weight_tolerance::Real=eps(Float64), 
-#         gamma_optimization_tolerance::Real=1e-4)
-
-# Fit a Canonical Powered Partial Least Squares (CPPLS) model.
-
-# # Arguments
-# - `X`: A matrix of predictor variables (observations × features). `NA`s and `Inf`s are not 
-#   allowed.
-# - `Y`: A matrix of response variables (observations × targets). `NA`s and `Inf`s are not 
-#   allowed.
-
-# # Optional Positional Argument
-# - `n_components`: The number of components to extract in the CPPLS model. Defaults to 2.
-
-# # Optional Keyword Arguments
-# - `gamma_bounds`: A vector of tuples specifying the lower and upper bounds for the power 
-#   parameter (`γ`) optimization. Defaults to `nothing`, which disables power parameter 
-#   optimization.
-# - `observation_weights`: A vector of individual weights for the observations (e.g., 
-#   experimental data or samples). Defaults to `nothing`.
-# - `Y_auxiliary: A matrix of auxiliary response variables containing additional information 
-#   about the observations. Defaults to `nothing`.
-# - `center`: Whether to mean-center the `X` and `Y` matrices. Defaults to `true`.
-# - `X_tolerance`: Tolerance for small norms in `X`. Columns of `X` with norms below this 
-#   threshold are set to zero during deflation. Defaults to `1e-12`.
-# - `X_loading_weight_tolerance`: Tolerance for small weights. Elements of the weight vector 
-#   below this threshold are set to zero. Defaults to `eps(Float64)`.
-# - `gamma_optimization_tolerance`: Tolerance for the optimization process when determining 
-#    the power parameter (`γ`). Defaults to `1e-4`.
-
-# # Returns
-# A `CPPLS` object containing the following fields:
-# - `regression_coefficients`: A 3D array of regression coefficients for 1, ..., 
-#   `n_components`.
-# - `X_scores`: A matrix of scores (latent variables) for the predictor matrix `X`.
-# - `X_loadings`: A matrix of loadings for the predictor matrix `X`.
-# - `X_loading_weights`: A matrix of loading weights for the predictor matrix `X`.
-# - `Y_scores`: A matrix of scores (latent variables) for the response matrix `Y`.
-# - `Y_loadings`: A matrix of loadings for the response matrix `Y`.
-# - `projection`: The projection matrix used to convert `X` to scores.
-# - `X_means`: A vector of means of the `X` variables (used for centering).
-# - `Y_means`: A vector of means of the `Y` variables (used for centering).
-# - `fitted_values`: An array of fitted values for the response matrix `Y`.
-# - `residuals`: An array of residuals for the response matrix `Y`.
-# - `X_variance`: A vector containing the amount of variance in `X` explained by each 
-#    component.
-# - `X_total_variance`: The total variance in `X`.
-# - `gammas`: The power parameter (`γ`) values obtained during power optimization.
-# - `canonical_correlations`: Canonical correlation values for each component.
-# - `small_norm_indices`: Indices of explanatory variables with norms close to or equal to 
-#    zero.
-# - `canonical_coefficients`: A matrix containing the canonical coefficients (`a`) from 
-#   canonical correlation analysis (`cor(Za, Yb)`).
-
-# # Notes
-# - The CPPLS model is an extension of Partial Least Squares (PLS) that incorporates 
-#   canonical correlation analysis (CCA) and power parameter optimization to maximize the 
-#   correlation between linear combinations of `X` and `Y`.
-# - The power parameter (`γ`) controls the balance between variance maximization and 
-#   correlation maximization. It is optimized within the specified bounds (`gamma_bounds`).
-# - If `Y_auxiliary` is provided, it is concatenated with `Y` to form a combined response 
-#   matrix (`Y_combined`), which is used during the fitting process.
-
-# # Example
-# ```julia
-# # Predictor matrix (X) and response matrix (Y)
-# X = [
-#     0.1322  0.07456  0.07784
-#    -4.3688 -2.87124 -3.34636
-#     4.6382  3.05536  3.58004
-#     1.4822  0.99256  1.14884
-#    -1.8838 -1.25124 -1.46036
-# ]
-
-# Y = [
-#     7.1  6.3  5.4
-#     6.2  5.8  4.9
-#     8.4  7.2  6.5
-#     7.8  6.9  5.9
-#     6.5  5.9  4.7
-# ]
-
-# # Auxiliary response matrix (optional)
-# Y_auxiliary = [
-#     7.2  6.4  5.5
-#     6.3  5.9  5.0
-#     8.5  7.3  6.6
-#     7.9  7.0  6.0
-#     6.6  6.0  4.8
-# ]
-
-# # Observation weights (optional)
-# observation_weights = [0.56, 0.07, 0.73, 0.75, 0.03]
-
-# # Power parameter limits
-# gamma_bounds = [(0.0, 0.2), (0.8, 1.0)]
-
-# # Fit the CPPLS model with 2 components
-# cppls = fit_cppls(X, Y, 2, gamma_bounds=gamma_bounds, 
-# observation_weights=observation_weights, Y_auxiliary=Y_auxiliary)
-
-# # Print the regression coefficients
-# println(cppls.regression_coefficients)
-# """
-
-# TO DO: gamma_bounds should become gamma and can be a scalar or a NTuple{2, T1} with the
-# two values being different. Default is gamma = 0.5.
+# Example
+"""
 function fit_cppls(
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
@@ -215,7 +136,30 @@ function fit_cppls(
         small_norm_flags, canonical_coefficients)
 end
 
+"""
+    fit_cppls_light(
+        X::AbstractMatrix{<:Real},
+        Y::AbstractMatrix{<:Real},
+        n_components::Integer;
+        gamma::Union{<:Real, <:NTuple{2, <:Real}}=0.5,
+        observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
+        Y_auxiliary::Union{AbstractMatrix{<:Real}, Nothing}=nothing,
+        center::Bool=true,
+        X_tolerance::Real=1e-12,
+        X_loading_weight_tolerance::Real=eps(Float64),
+        gamma_optimization_tolerance::Real=1e-4,
+        t_squared_norm_tolerance::Real=1e-10)
 
+Fit a CPPLS model but retain only the parts needed for prediction (`CPPLSLight`).
+
+Arguments mirror `fit_cppls`, but the `gamma` keyword accepts either a fixed scalar or a
+single `(lo, hi)` tuple. The returned `CPPLSLight` stores only the stacked regression
+coefficients plus the `X`/`Y` centering means.
+
+# Notes
+- Use this when you only need predictions, not the intermediate diagnostics.
+- The same preprocessing, weighting, and tolerance settings apply as in `fit_cppls`.
+"""
 function fit_cppls_light(
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
@@ -247,4 +191,44 @@ function fit_cppls_light(
     end
 
     CPPLSLight(regression_coefficients, X̄_mean, Ȳ_mean)
+end
+
+function process_component!(
+    i::Integer,
+    X_deflated::AbstractMatrix{<:Real},
+    X_loading_weightsᵢ::AbstractVector{<:Real},
+    Y_responses::AbstractMatrix{<:Real},
+    X_loading_weights::AbstractMatrix{<:Real},
+    X_loadings::AbstractMatrix{<:Real},
+    Y_loadings::AbstractMatrix{<:Real},
+    regression_coefficients::Array{<:Real,3},
+    small_norm_flags::AbstractMatrix{Bool},
+    X_tolerance::Real,
+    X_loading_weight_tolerance::Real,
+    tᵢ_squared_norm_tolerance::Real)
+
+    X_loading_weightsᵢ .= (X_loading_weightsᵢ ./ norm(X_loading_weightsᵢ) 
+        .* (abs.(X_loading_weightsᵢ) .>= X_loading_weight_tolerance))
+
+    X_scoresᵢ = X_deflated * X_loading_weightsᵢ
+    tᵢ_squared_norm = X_scoresᵢ' * X_scoresᵢ
+
+    if isapprox(tᵢ_squared_norm, 0.0)
+        tᵢ_squared_norm += tᵢ_squared_norm_tolerance
+    end
+    X_loadingsᵢ = (X_deflated' * X_scoresᵢ) / tᵢ_squared_norm
+    Y_loadingsᵢ = (Y_responses' * X_scoresᵢ) / tᵢ_squared_norm
+
+    X_deflated .-= X_scoresᵢ * X_loadingsᵢ'
+
+    small_norm_flags[i, :] .= vec(sum(abs.(X_deflated), dims=1) .< X_tolerance)
+    X_deflated[:, small_norm_flags[i, :]] .= 0
+
+    X_loading_weights[:, i] .= X_loading_weightsᵢ
+    X_loadings[:, i] .= X_loadingsᵢ
+    Y_loadings[:, i] .= Y_loadingsᵢ
+    regression_coefficients[:, :, i] .= (X_loading_weights[:, 1:i] * 
+        pinv(X_loadings[:, 1:i]' * X_loading_weights[:, 1:i]) * Y_loadings[:, 1:i]')
+
+    X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ
 end

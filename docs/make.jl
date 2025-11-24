@@ -10,10 +10,12 @@ makedocs(
 	pages = [
         "Home" => "index.md",
 		"CPPLS" => Any[
+			"CPPLS/fit.md",
             "CPPLS/types.md",
 			"CPPLS/predict.md",
 		    ],
 		"Utils" => Any[
+			"Utils/encoding.md",
 			"Utils/statistics.md",
 		    ]
     ]

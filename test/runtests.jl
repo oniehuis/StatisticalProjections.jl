@@ -8,3 +8,11 @@ end
 @testset "CPPLS/predict" begin
     include(joinpath("CPPLS", "predict.jl"))
 end
+
+@testset "CPPLS/fit" begin
+    include(joinpath("CPPLS", "fit.jl"))
+end
+
+@testset "Utils/encoding" begin
+    include(joinpath("Utils", "encoding.jl"))
+end
