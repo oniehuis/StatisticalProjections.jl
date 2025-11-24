@@ -1,3 +1,15 @@
+"""
+    random_batch_indices(strata::AbstractVector{<:Integer},
+                         num_batches::Integer,
+                         rng::AbstractRNG=Random.GLOBAL_RNG)
+
+Construct stratified folds. For each unique entry in `strata` the corresponding
+sample indices are shuffled with `rng` and then dealt round-robin into
+`num_batches` disjoint vectors. This keeps class proportions stable across
+folds. Throws if `num_batches` is less than `1` or larger than the number of
+samples. Returns a vector-of-vectors of 1-based indices, each representing one
+fold.
+"""
 function random_batch_indices(
     strata::AbstractVector{<:Integer},
     num_batches::Integer,
@@ -33,7 +45,48 @@ function random_batch_indices(
     batches
 end
 
+"""
+    optimize_num_latent_variables(
+        X_train_full::AbstractMatrix{<:Real},
+        Y_train_full::AbstractMatrix{<:Integer},
+        max_components::Integer,
+        num_inner_folds::Integer,
+        num_inner_folds_repeats::Integer,
+        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}},
+        observation_weights::Union{AbstractVector{<:Real},Nothing},
+        Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+        center::Bool,
+        X_tolerance::Real,
+        X_loading_weight_tolerance::Real,
+        t_squared_norm_tolerance::Real,
+        gamma_optimization_tolerance::Real,
+        weighted_nmc::Bool,
+        rng::AbstractRNG,
+        verbose::Bool)
 
+Repeated inner cross-validation used inside `nested_cv` to pick the component
+count. Argument summary:
+
+- `X_train_full`, `Y_train_full`: numeric training matrices (observations × features/targets).
+- `max_components`: `Int` upper bound on components to evaluate (≥ 1).
+- `num_inner_folds`, `num_inner_folds_repeats`: integers controlling stratified
+  folds drawn via `random_batch_indices`.
+- `gamma`: either a scalar γ, a `(lo, hi)` tuple of `Real`s, or a vector mixing
+  both; forwarded to `fit_cppls_light`.
+- `observation_weights`: optional weight vector matching the training rows.
+- `Y_auxiliary`: optional auxiliary response matrix aligned with `Y_train_full`.
+- `center`: `Bool` toggling mean-centering in the inner fits.
+- `X_tolerance`, `X_loading_weight_tolerance`, `t_squared_norm_tolerance`,
+  `gamma_optimization_tolerance`: `Real` tolerances passed to the fitter.
+- `weighted_nmc`: choose class-weighted misclassification cost (`true` by default).
+- `rng`: random-number generator used for shuffling.
+- `verbose`: when `true`, prints per-fold diagnostics.
+
+For every inner repeat the routine fits a `CPPLSLight` with `max_components`,
+scores validation folds for each partial component count using `predict` +
+`predictonehot`, evaluates `nmc`, records the argmin, and finally returns the
+median winning component number (rounded down) across repeats.
+"""
 function optimize_num_latent_variables(
     X_train_full::AbstractMatrix{<:Real}, 
     Y_train_full::AbstractMatrix{<:Integer}, 
@@ -104,6 +157,45 @@ function optimize_num_latent_variables(
 end
 
 
+"""
+    nested_cv(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Real};
+        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}}=0.5,
+        observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
+        Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
+        center::Bool=true,
+        X_tolerance::Real=1e-12,
+        X_loading_weight_tolerance::Real=eps(Float64),
+        t_squared_norm_tolerance::Real=1e-10,
+        gamma_optimization_tolerance::Real=1e-4,
+        num_outer_folds::Integer=8,
+        num_outer_folds_repeats::Integer=num_outer_folds,
+        num_inner_folds::Integer=7,
+        num_inner_folds_repeats::Integer=num_inner_folds,
+        max_components::Integer=5,
+        weighted_nmc::Bool=true,
+        rng::AbstractRNG=Random.GLOBAL_RNG,
+        verbose::Bool=true)
+
+Top-level nested CV driver for CPPLS. Parameter overview:
+
+- `X_predictors`, `Y_responses`: feature and one-hot response matrices.
+- `gamma`: scalar γ, `(lo, hi)` tuple, or per-component vector; passed to
+  `fit_cppls_light`.
+- `observation_weights`: optional sample weights; `Y_auxiliary`: extra response features.
+- `center`: toggle mean-centering; tolerances control numerical stability inside
+  inner fits; `weighted_nmc` chooses between weighted/unweighted misclassification cost.
+- `num_outer_folds`, `num_outer_folds_repeats`: number of outer stratified folds
+  and how many to evaluate (≤ `num_outer_folds`).
+- `num_inner_folds`, `num_inner_folds_repeats`: same for inner CV.
+- `max_components`: maximum latent components considered by the inner loop.
+- `rng`: random generator shared across fold shuffles; `verbose`: emit progress.
+
+For every outer fold the data is split into training/test partitions, an inner
+CV loop selects the optimal component count via `optimize_num_latent_variables`,
+the final `CPPLSLight` is fit on the outer training data with that count, and
+`accuracy = 1 - nmc` is computed on the outer test split. Returns a tuple
+`(outer_fold_accuracies, optimal_num_latent_variables)`.
+"""
 function nested_cv(
     X_predictors::AbstractMatrix{<:Real}, 
     Y_responses::AbstractMatrix{<:Real};
@@ -125,14 +217,14 @@ function nested_cv(
     verbose::Bool=true
     ) where {T1<:Real, T2<:Real, T3<:Real}
     
-    num_outer_folds_repeats ≤ num_outer_folds ||
-        error("The number of outer fold repeats cannot exceed the number of outer folds")
+    num_outer_folds_repeats ≤ num_outer_folds || throw(ArgumentError(
+        "The number of outer fold repeats cannot exceed the number of outer folds"))
 
-    num_inner_folds_repeats ≤ num_inner_folds ||
-        error("The number of inner fold repeats cannot exceed the number of inner folds")
+    num_inner_folds_repeats ≤ num_inner_folds || throw(ArgumentError(
+        "The number of inner fold repeats cannot exceed the number of inner folds"))
 
-    max_components > 0 ||
-        error("The number of components must be greater than zero")
+    max_components > 0 || throw(ArgumentError(
+        "The number of components must be greater than zero"))
 
     n_samples = size(X_predictors, 1)
     class_labels = one_hot_to_labels(Y_responses)
@@ -186,7 +278,44 @@ function nested_cv(
     outer_fold_accuracies, optimal_num_latent_variables
 end
 
+"""
+    nested_cv_permutation(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Real};
+        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}}=0.5,
+        observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
+        Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
+        center::Bool=true,
+        X_tolerance::Real=1e-12,
+        X_loading_weight_tolerance::Real=eps(Float64),
+        t_squared_norm_tolerance::Real=1e-10,
+        gamma_optimization_tolerance::Real=1e-4,
+        num_outer_folds::Integer=9,
+        num_outer_folds_repeats::Integer=num_outer_folds,
+        num_inner_folds::Integer=8,
+        num_inner_folds_repeats::Integer=num_inner_folds,
+        max_components::Integer=5,
+        weighted_nmc::Bool=true,
+        num_permutations::Integer=999,
+        rng::AbstractRNG=Random.GLOBAL_RNG,
+        verbose::Bool=true)
 
+Permutation-based significance test for the nested CV pipeline. Keywords mirror
+`nested_cv` but with explicit defaults suited for permutation tests. Parameter
+summary:
+
+- `gamma`, `observation_weights`, `Y_auxiliary`, `center`, tolerances,
+  `weighted_nmc`: forwarded directly into each nested CV call.
+- `num_outer_folds`, `num_outer_folds_repeats`, `num_inner_folds`,
+  `num_inner_folds_repeats`, `max_components`: control the inner/outer fold
+  geometry per permutation.
+- `num_permutations`: number of label shuffles (≥ 1).
+- `rng`: governs shuffling of both labels and folds; `verbose`: prints progress.
+
+For each permutation the rows of `Y_responses` are randomly shuffled, then
+`nested_cv` is executed with the same hyperparameters, and the mean outer-fold
+accuracy is recorded. Returns a vector of length `num_permutations` containing
+those mean accuracies so you can compute empirical p-values against the
+unpermuted nested-CV accuracy.
+"""
 function nested_cv_permutation(
     X_predictors::AbstractMatrix{<:Real}, 
     Y_responses::AbstractMatrix{<:Real};
@@ -209,14 +338,14 @@ function nested_cv_permutation(
     verbose::Bool=true,
     ) where {T1<:Real, T2<:Real, T3<:Real}
 
-    num_outer_folds_repeats ≤ num_outer_folds ||
-        error("The number of outer fold repeats cannot exceed the number of outer folds")
+    num_outer_folds_repeats ≤ num_outer_folds || throw(ArgumentError(
+        "The number of outer fold repeats cannot exceed the number of outer folds"))
 
-    num_inner_folds_repeats ≤ num_inner_folds ||
-        error("The number of inner fold repeats cannot exceed the number of inner folds")
+    num_inner_folds_repeats ≤ num_inner_folds || throw(ArgumentError(
+        "The number of inner fold repeats cannot exceed the number of inner folds"))
 
-    max_components > 0 ||
-        error("The number of components must be greater than zero")
+    max_components > 0 || throw(ArgumentError(
+        "The number of components must be greater than zero"))
 
     n_samples = size(X_predictors, 1)
     permutation_accuracies = Vector{Float64}(undef, num_permutations)

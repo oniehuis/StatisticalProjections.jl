@@ -24,3 +24,7 @@ end
 @testset "Utils/statistics" begin
     include(joinpath("Utils", "statistics.jl"))
 end
+
+@testset "Evaluation/crossvalidation" begin
+    include(joinpath("Evaluation", "crossvalidation.jl"))
+end
