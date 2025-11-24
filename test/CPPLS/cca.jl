@@ -42,6 +42,15 @@ end
     weights_bounds = StatisticalProjections.compute_cppls_weights(
         X, Y_combined, Y, nothing, (0.1, 0.9), 1e-4)
     @test length(weights_bounds) == 4
+
+    scalar_gamma = StatisticalProjections.compute_cppls_weights(
+        X, Y_combined, Y, nothing, 0.3, 1e-4)
+    tuple_gamma = StatisticalProjections.compute_cppls_weights(
+        X, Y_combined, Y, nothing, (0.3, 0.3), 1e-4)
+    @test all(isapprox.(scalar_gamma[1], tuple_gamma[1]))
+    @test scalar_gamma[2] ≈ tuple_gamma[2]
+    @test all(isapprox.(scalar_gamma[3], tuple_gamma[3]))
+    @test scalar_gamma[4] ≈ tuple_gamma[4]
 end
 
 @testset "weight helpers and gamma search utilities" begin
@@ -96,7 +105,7 @@ end
     @test 0.0 ≤ γ_tuple ≤ 1.0
     @test 0.0 ≤ corr_tuple ≤ 1.0
 
-    gamma_choices = Union{Float64, NTuple{2, Float64}}[0.0, 0.5, (0.2, 0.8)]
+    gamma_choices = Union{Float64, NTuple{2, Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
     γ_vec, corr_vec = StatisticalProjections.compute_best_gamma(
         X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing,
         gamma_choices, 1e-4)
