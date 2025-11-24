@@ -16,7 +16,7 @@ include("CPPLS/cca.jl")
 include("CPPLS/fit.jl")
 include("CPPLS/predict.jl")
 
-include("Evaluation/matrics.jl")
+include("Evaluation/metrics.jl")
 include("Evaluation/crossvalidation.jl")
 
 export CPPLS
