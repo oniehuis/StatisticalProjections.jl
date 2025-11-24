@@ -93,3 +93,30 @@ end
     @test Y_loadings[:, 1] ≈ expected_Y_loadings
     @test regression_coefficients[:, :, 1] ≈ expected_B
 end
+
+@testset "process_component! guards zero-norm scores" begin
+    X = Float64[
+        1 0
+        0 1
+        1 1
+    ]
+    Y = Float64[
+        1 0
+        0 1
+        1 0
+    ]
+    X_predictors, Y_responses, _, _, _, _, X_deflated,
+    X_loading_weights, X_loadings, Y_loadings, small_norm_flags,
+    regression_coefficients, _, _ = StatisticalProjections.cppls_prepare_data(
+        X, Y, 1, nothing, nothing, true)
+
+    X_deflated .= 0  # force zero scores regardless of weights
+    initial_weights = [1.0, 2.0]
+    tol = 1e-8
+
+    _, t_norm, _ = StatisticalProjections.process_component!(1, X_deflated,
+        copy(initial_weights), Y_responses, X_loading_weights, X_loadings, Y_loadings,
+        regression_coefficients, small_norm_flags, 1e-12, 1e-12, tol)
+
+    @test t_norm == tol
+end
