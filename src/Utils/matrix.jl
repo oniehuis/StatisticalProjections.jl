@@ -1,3 +1,11 @@
+"""
+    find_invariant_and_variant_columns(M::AbstractMatrix)
+
+Scan each column of `M` and split them into two index vectors: columns whose
+entries are all identical (`invariant_columns`) and columns that contain any
+variation (`variant_columns`). Useful for removing zero-variance predictors
+before fitting.
+"""
 function find_invariant_and_variant_columns(M::AbstractMatrix)
     invariant_columns = Int[]
     variant_columns = Int[]

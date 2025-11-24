@@ -16,6 +16,7 @@ makedocs(
 		    ],
 		"Utils" => Any[
 			"Utils/encoding.md",
+			"Utils/matrix.md",
 			"Utils/statistics.md",
 		    ]
     ]
