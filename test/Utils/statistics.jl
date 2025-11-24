@@ -59,6 +59,10 @@ end
     direction, scores = StatisticalProjections.separationaxis(reshape(X_single, :, 1), Y)
     @test direction[1] == 1.0 || direction[1] == -1.0
     @test minimum(scores[Y[:, 1] .== 1]) > maximum(scores[Y[:, 2] .== 1])
+    flipped_dir, flipped_scores = StatisticalProjections.separationaxis(
+        reshape(X_single, :, 1), Y; positive_class=2)
+    @test flipped_dir == -direction
+    @test flipped_scores == -scores
 
     X_multi = [
         3.0   1.0
@@ -73,4 +77,16 @@ end
     @test minimum(scores_centroid[Y[:, 1] .== 1]) > maximum(scores_centroid[Y[:, 2] .== 1])
     @test minimum(scores_lda[Y[:, 1] .== 1]) > maximum(scores_lda[Y[:, 2] .== 1])
     @test dir_centroid' * dir_lda ≈ abs(dir_centroid' * dir_lda)
+    dir_centroid_neg, scores_centroid_neg = StatisticalProjections.separationaxis(
+        X_multi, Y; method=:centroid, positive_class=2)
+    @test dir_centroid_neg ≈ -dir_centroid
+    @test scores_centroid_neg ≈ -scores_centroid
+
+    X_equal_means = [
+        1.0  2.0
+        1.0  2.0
+        1.0  2.0
+        1.0  2.0
+    ]
+    @test_throws ArgumentError StatisticalProjections.separationaxis(X_equal_means, Y; method=:centroid)
 end
