@@ -6,18 +6,18 @@ function suppress_info(f::Function)
 end
 
 const CROSSVAL_X = Float64[
-    1.0   0.0   0.5   1.0
-    2.0   0.5   1.0   0.0
-    3.0   1.0   0.0   0.5
-    4.0   1.5   0.5   1.0
-    5.0   2.0   1.0   0.0
-    6.0   2.5   0.0   0.5
-    7.0   3.0   0.5   1.0
-    8.0   3.5   1.0   0.0
-    9.0   4.0   0.0   0.5
-    10.0  4.5   0.5   1.0
-    11.0  5.0   1.0   0.0
-    12.0  5.5   0.0   0.5
+    1.1   0.5   1.7   2.3
+    2.2   1.1   0.4   3.6
+    3.3   1.8   2.5   4.9
+    4.4   2.6   1.1   6.1
+    5.5   3.3   3.2   7.4
+    6.6   4.0   1.8   8.8
+    7.7   4.6   2.9   9.9
+    8.8   5.3   0.7   11.2
+    9.9   6.1   3.6   12.5
+    11.0  6.8   2.2   13.7
+    12.1  7.5   4.3   15.0
+    13.2  8.2   1.5   16.3
 ]
 
 const CROSSVAL_Y = [
@@ -83,6 +83,7 @@ end
             num_inner_folds_repeats=2,
             max_components=1,
             num_permutations=2,
+            center=false,
             rng=StatisticalProjections.MersenneTwister(321),
             verbose=false)
     end

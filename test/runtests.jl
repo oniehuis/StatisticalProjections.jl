@@ -9,8 +9,16 @@ end
     include(joinpath("CPPLS", "predict.jl"))
 end
 
+@testset "CPPLS/cca" begin
+    include(joinpath("CPPLS", "cca.jl"))
+end
+
 @testset "CPPLS/fit" begin
     include(joinpath("CPPLS", "fit.jl"))
+end
+
+@testset "CPPLS/preprocessing" begin
+    include(joinpath("CPPLS", "preprocessing.jl"))
 end
 
 @testset "Utils/encoding" begin
@@ -27,4 +35,8 @@ end
 
 @testset "Evaluation/crossvalidation" begin
     include(joinpath("Evaluation", "crossvalidation.jl"))
+end
+
+@testset "Evaluation/metrics" begin
+    include(joinpath("Evaluation", "metrices.jl"))
 end
