@@ -51,6 +51,12 @@ end
     @test scalar_gamma[2] ≈ tuple_gamma[2]
     @test all(isapprox.(scalar_gamma[3], tuple_gamma[3]))
     @test scalar_gamma[4] ≈ tuple_gamma[4]
+
+    loadings_one, corr_one, coeffs_one, gamma_one = StatisticalProjections.compute_cppls_weights(
+        X, Y_combined, Y, nothing, (1.0, 1.0), 1e-4)
+    @test gamma_one == 1.0
+    @test all(isfinite.(loadings_one))
+    @test all(isnan.(coeffs_one))
 end
 
 @testset "weight helpers and gamma search utilities" begin
