@@ -1,0 +1,76 @@
+@testset "corr_track_tic collapses third axis before correlating" begin
+    X_unit = reshape(Float64[
+        1 2  3 4
+        2 3  4 5
+        3 4  5 6
+    ], 3, 2, 2)
+    u = [1.0, 2.0, 3.0]
+    tic = dropdims(sum(X_unit, dims=3); dims=3)
+    manual = [StatisticalProjections.robustcor(view(tic, :, r), u) for r in 1:2]
+
+    result = StatisticalProjections.corr_track_tic(X_unit, u)
+    @test result ≈ manual
+end
+
+@testset "fisherztrack aggregates correlations per axis₁" begin
+    X = reshape(Float64[
+        1 2  3 4
+        2 3  4 5
+        3 4  5 6
+        4 5  6 7
+    ], 4, 2, 2)
+    scores = [1.0, 2.0, 3.0, 4.0]
+
+    manual = zeros(2)
+    for axis1 in 1:2
+        rs = Float64[]
+        ws = Float64[]
+        for axis2 in 1:2
+            push!(rs, StatisticalProjections.robustcor(view(X, :, axis1, axis2), scores))
+            push!(ws, StatisticalProjections.mean(view(X, :, axis1, axis2)))
+        end
+        zs = atanh.(clamp.(rs, nextfloat(-1.0), prevfloat(1.0)))
+        manual[axis1] = tanh(sum(ws .* zs) / (sum(ws) + eps(Float64)))
+    end
+
+    result = StatisticalProjections.fisherztrack(X, scores; weights=:mean)
+    @test result ≈ manual
+end
+
+@testset "robustcor handles constants and finite values" begin
+    x = [1.0, 2.0, 3.0, 4.0]
+    y = [2.0, 4.0, 6.0, 8.0]
+    @test StatisticalProjections.robustcor(x, y) ≈ 1.0
+
+    constant = fill(3.0, 4)
+    noisy = [0.5, 0.2, 0.7, 0.6]
+    @test StatisticalProjections.robustcor(constant, noisy) == 0.0
+end
+
+@testset "separationaxis orients single and multi component projections" begin
+    Y = [
+        1 0
+        0 1
+        1 0
+        0 1
+    ]
+
+    X_single = [4.0; -1.0; 3.0; -2.0]
+    direction, scores = StatisticalProjections.separationaxis(reshape(X_single, :, 1), Y)
+    @test direction[1] == 1.0 || direction[1] == -1.0
+    @test minimum(scores[Y[:, 1] .== 1]) > maximum(scores[Y[:, 2] .== 1])
+
+    X_multi = [
+        3.0   1.0
+        -2.0  0.0
+        1.0   3.0
+        -1.0 -2.0
+    ]
+    dir_centroid, scores_centroid = StatisticalProjections.separationaxis(X_multi, Y; method=:centroid)
+    dir_lda, scores_lda = StatisticalProjections.separationaxis(X_multi, Y; method=:lda)
+    @test size(dir_centroid) == (2,)
+    @test size(dir_lda) == (2,)
+    @test minimum(scores_centroid[Y[:, 1] .== 1]) > maximum(scores_centroid[Y[:, 2] .== 1])
+    @test minimum(scores_lda[Y[:, 1] .== 1]) > maximum(scores_lda[Y[:, 2] .== 1])
+    @test dir_centroid' * dir_lda ≈ abs(dir_centroid' * dir_lda)
+end

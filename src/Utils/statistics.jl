@@ -1,16 +1,23 @@
 """
-    robustcor(x::AbstractVector, y::AbstractVector)
+    corr_track_tic(X_unit::Array{<:Real,3}, u::AbstractVector)
 
-Robust correlation helper used inside projection diagnostics. Returns the
-Pearson correlation between `x` and `y`, falling back to `0.0` when either input
-is constant or when the computed value is not finite (e.g. `NaN` or `Inf`).
+Compute the correlation between each track (axis `R`) of the tensor `X_unit`
+summed over its third dimension and the vector `u`. This helper is similar to
+`fisherztrack` but operates on time-intensity-correlation (TIC) cubes: it first
+collapses axis `M`, then uses `robustcor` to compare each resulting track to `u`.
+
+Returns a length-`size(X_unit, 2)` vector of correlations.
 """
-@inline function robustcor(x::AbstractVector, y::AbstractVector)
-    (std(x) == 0 || std(y) == 0) && return 0.0
-    c = cor(x, y)
-    isfinite(c) ? c : 0.0
+function corr_track_tic(X_unit::Array{<:Real,3}, u::AbstractVector)
+    n, R, M = size(X_unit)
+    @assert length(u) == n
+    tic = dropdims(sum(X_unit, dims=3); dims=3)
+    ρ = Vector{Float64}(undef, R)
+    @inbounds for r in 1:R
+        ρ[r] = robustcor(@view(tic[:, r]), u)
+    end
+    ρ
 end
-
 
 """
     fisherztrack(X::AbstractArray{<:Real,3}, scores::AbstractVector; weights=:mean)
@@ -62,6 +69,18 @@ function fisherztrack(X::AbstractArray{<:Real,3},
     ρ
 end
 
+"""
+    robustcor(x::AbstractVector, y::AbstractVector)
+
+Robust correlation helper used inside projection diagnostics. Returns the
+Pearson correlation between `x` and `y`, falling back to `0.0` when either input
+is constant or when the computed value is not finite (e.g. `NaN` or `Inf`).
+"""
+@inline function robustcor(x::AbstractVector, y::AbstractVector)
+    (std(x) == 0 || std(y) == 0) && return 0.0
+    c = cor(x, y)
+    isfinite(c) ? c : 0.0
+end
 
 """
     separationaxis(Xscores::AbstractMatrix, Y::AbstractMatrix;
@@ -142,16 +161,4 @@ function separationaxis(Xscores::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Rea
 
         return direction, scores
     end
-end
-
-
-function corr_track_tic(X_unit::Array{<:Real,3}, u::AbstractVector)
-    n, R, M = size(X_unit)
-    @assert length(u) == n
-    tic = dropdims(sum(X_unit, dims=3); dims=3)
-    ρ = Vector{Float64}(undef, R)
-    @inbounds for r in 1:R
-        ρ[r] = robustcor(@view(tic[:, r]), u)
-    end
-    ρ
 end
