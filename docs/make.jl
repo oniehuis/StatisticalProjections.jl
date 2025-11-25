@@ -26,5 +26,6 @@ makedocs(
 )
 
 deploydocs(
-	repo = "github.com/oniehuis/StatisticalProjections.jl"
+	repo = "github.com/oniehuis/StatisticalProjections.jl",
+	devbranch = "main",
 )
