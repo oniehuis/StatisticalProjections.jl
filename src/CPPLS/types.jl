@@ -63,18 +63,18 @@ end
 
 
 """
-    CPPLSLight{T1}
+    CPPLSLight{T}
 
-Memory-lean CPPLS variant retaining only the pieces needed for prediction. `T1`
+Memory-lean CPPLS variant retaining only the pieces needed for prediction. `T`
 is the floating-point element type shared by all stored matrices.
 
 # Fields
-- `regression_coefficients::Array{T1, 3}` — stacked regression matrices.
-- `X_means::Matrix{T1}` — predictor means copied from the training data.
-- `Y_means::Matrix{T1}` — response means copied from the training data.
+- `regression_coefficients::Array{T, 3}` — stacked regression matrices.
+- `X_means::Matrix{T}` — predictor means copied from the training data.
+- `Y_means::Matrix{T}` — response means copied from the training data.
 """
-struct CPPLSLight{T1<:Real} <: AbstractCPPLS
-    regression_coefficients::Array{T1, 3}
-    X_means::Matrix{T1}
-    Y_means::Matrix{T1}
+struct CPPLSLight{T<:Real} <: AbstractCPPLS
+    regression_coefficients::Array{T, 3}
+    X_means::Matrix{T}
+    Y_means::Matrix{T}
 end
