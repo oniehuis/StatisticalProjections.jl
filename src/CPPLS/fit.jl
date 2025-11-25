@@ -29,7 +29,7 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
   `0.5`, i.e. no optimization.
 - `observation_weights`: A vector of individual weights for the observations (e.g., 
   experimental data or samples). Defaults to `nothing`.
-- `Y_auxiliary: A matrix of auxiliary response variables containing additional information 
+- `Y_auxiliary`: A matrix of auxiliary response variables containing additional information 
   about the observations. Defaults to `nothing`.
 - `center`: Whether to mean-center the `X` and `Y` matrices. Defaults to `true`.
 - `X_tolerance`: Tolerance for small norms in `X`. Columns of `X` with norms below this 
@@ -73,8 +73,6 @@ A `CPPLS` object containing the following fields:
   correlation maximization. It is optimized within the specified bounds (`gamma_bounds`).
 - If `Y_auxiliary` is provided, it is concatenated with `Y` to form a combined response 
   matrix (`Y_combined`), which is used during the fitting process.
-
-# Example
 """
 function fit_cppls(
     X_predictors::AbstractMatrix{<:Real},
@@ -141,7 +139,7 @@ end
         X::AbstractMatrix{<:Real},
         Y::AbstractMatrix{<:Real},
         n_components::Integer;
-        gamma::Union{<:Real, <:NTuple{2, <:Real}}=0.5,
+        gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
         Y_auxiliary::Union{AbstractMatrix{<:Real}, Nothing}=nothing,
         center::Bool=true,
@@ -152,9 +150,9 @@ end
 
 Fit a CPPLS model but retain only the parts needed for prediction (`CPPLSLight`).
 
-Arguments mirror `fit_cppls`, but the `gamma` keyword accepts either a fixed scalar or a
-single `(lo, hi)` tuple. The returned `CPPLSLight` stores only the stacked regression
-coefficients plus the `X`/`Y` centering means.
+Arguments mirror `fit_cppls`, including support for scalar γ, `(lo, hi)` bounds, or
+vectors that mix scalars and tuples as candidate sets. The returned `CPPLSLight` stores
+only the stacked regression coefficients plus the `X`/`Y` centering means.
 
 # Notes
 - Use this when you only need predictions, not the intermediate diagnostics.
@@ -164,7 +162,7 @@ function fit_cppls_light(
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
     n_components::Integer=2;
-    gamma::Union{<:T1, <:NTuple{2, T1}}=0.5,
+    gamma::Union{<:T1, <:NTuple{2, T1}, <:AbstractVector{<:Union{<:T1, <:NTuple{2, T1}}}}=0.5,
     observation_weights::Union{AbstractVector{T2}, Nothing}=nothing,
     Y_auxiliary::Union{AbstractMatrix{T3}, Nothing}=nothing,
     center::Bool=true,

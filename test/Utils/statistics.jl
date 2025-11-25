@@ -1,17 +1,3 @@
-@testset "corr_track_tic collapses third axis before correlating" begin
-    X_unit = reshape(Float64[
-        1 2  3 4
-        2 3  4 5
-        3 4  5 6
-    ], 3, 2, 2)
-    u = [1.0, 2.0, 3.0]
-    tic = dropdims(sum(X_unit, dims=3); dims=3)
-    manual = [StatisticalProjections.robustcor(view(tic, :, r), u) for r in 1:2]
-
-    result = StatisticalProjections.corr_track_tic(X_unit, u)
-    @test result ≈ manual
-end
-
 @testset "fisherztrack aggregates correlations per axis₁" begin
     X = reshape(Float64[
         1 2  3 4

@@ -1,31 +1,13 @@
 """
-    corr_track_tic(X_unit::Array{<:Real,3}, u::AbstractVector)
+    fisherztrack(X::AbstractArray{<:Real, 3}, scores::AbstractVector; weights=:mean)
 
-Compute the correlation between each track (axis `R`) of the tensor `X_unit`
-summed over its third dimension and the vector `u`. This helper is similar to
-`fisherztrack` but operates on time-intensity-correlation (TIC) cubes: it first
-collapses axis `M`, then uses `robustcor` to compare each resulting track to `u`.
-
-Returns a length-`size(X_unit, 2)` vector of correlations.
-"""
-function corr_track_tic(X_unit::Array{<:Real,3}, u::AbstractVector)
-    n, R, M = size(X_unit)
-    @assert length(u) == n
-    tic = dropdims(sum(X_unit, dims=3); dims=3)
-    ρ = Vector{Float64}(undef, R)
-    @inbounds for r in 1:R
-        ρ[r] = robustcor(@view(tic[:, r]), u)
-    end
-    ρ
-end
-
-"""
-    fisherztrack(X::AbstractArray{<:Real,3}, scores::AbstractVector; weights=:mean)
-
-Track how strongly each (axis₁, axis₂) slice of `X` correlates with the provided
-`scores` vector. For every axis₁ value we compute the Fisher z-transform of the
-robust correlations across axis₂, optionally weighting each slice by its mean,
-and invert the transform to obtain a stabilized correlation estimate per axis₁.
+Interpret `X` as a three-dimensional array (a “tensor”) of shape `n × axis₁ × axis₂`,
+where `n` matches the length of `scores`. For every combination of `axis₁` and `axis₂`, 
+the function extracts the length-`n` slice (a single “track”) and correlates it with 
+`scores`. Those correlations are Fisher z-transformed to stabilize variance, optionally 
+weighted by the slice means (when `weights = :mean`), averaged for each `axis₁`, and 
+finally inverse-transformed. The result is one smoothed correlation per `axis₁`, 
+summarizing all its `axis₂` slices.
 
 Arguments
 - `X`: 3-D tensor whose first axis matches the observation axis of `scores`.
@@ -33,8 +15,18 @@ Arguments
 - `weights`: choose `:mean` to weight by the slice means or `:none` for equal weights.
 
 Returns a vector of correlations with length `size(X, 2)`.
+
+# Example
+```
+julia> X = reshape(Float64[1, 2, 3, 4, 2, 3, 4, 5, 3, 5, 7, 9], 4, 3, 1);
+
+julia> scores = [1.0, 2.0, 3.0, 4.0];
+
+julia> fisherztrack(X, scores) ≈ [1.0, 1.0, 1.0]
+true
+```
 """
-function fisherztrack(X::AbstractArray{<:Real,3},
+function fisherztrack(X::AbstractArray{<:Real, 3},
                       scores::AbstractVector{<:Real};
                       weights::Symbol=:mean)
 
@@ -70,11 +62,20 @@ function fisherztrack(X::AbstractArray{<:Real,3},
 end
 
 """
-    robustcor(x::AbstractVector, y::AbstractVector)
+    StatisticalProjections.robustcor(x::AbstractVector, y::AbstractVector)
 
-Robust correlation helper used inside projection diagnostics. Returns the
-Pearson correlation between `x` and `y`, falling back to `0.0` when either input
-is constant or when the computed value is not finite (e.g. `NaN` or `Inf`).
+Robust correlation helper used inside projection diagnostics. Returns the Pearson 
+correlation between `x` and `y`, falling back to `0.0` when either input is constant or 
+when the computed value is not finite (e.g. `NaN` or `Inf`).
+
+# Examples
+```
+julia> StatisticalProjections.robustcor([1, 2, 3], [3, 2, 1])
+-1.0
+
+julia> StatisticalProjections.robustcor([1, 1, 1], [2, 3, 4])
+0.0
+```
 """
 @inline function robustcor(x::AbstractVector, y::AbstractVector)
     (std(x) == 0 || std(y) == 0) && return 0.0
@@ -83,17 +84,33 @@ is constant or when the computed value is not finite (e.g. `NaN` or `Inf`).
 end
 
 """
-    separationaxis(Xscores::AbstractMatrix, Y::AbstractMatrix;
-                   method=:centroid, positive_class=1)
+    separationaxis(Xscores::AbstractMatrix, Y::AbstractMatrix; method::Symbol=:centroid, 
+    positive_class::Integer=1)
 
-Derive a one-dimensional separation axis from latent scores (`Xscores`) and a
-binary one-hot response matrix `Y`. The returned tuple `(direction, scores)`
-contains the unit direction vector and the resulting signed projection scores
-with the `positive_class` oriented toward larger values.
+Given `Xscores` (rows = samples, columns = latent components) and a binary one-hot label 
+matrix `Y` with two columns, this helper finds the line in score space that best separates 
+the classes. It returns `(direction, scores)` where `direction` is a unit vector and 
+`scores = Xscores * direction` are the signed projections, flipped if necessary so that the 
+`positive_class` has larger values.
 
-Keyword `method` selects either `:centroid` (difference of class means) or
-`:lda` (Fisher LDA using pooled covariance) for multi-axis inputs. For a single
-axis, the function simply ensures the orientation matches `positive_class`.
+When `Xscores` has multiple columns, choose `method = :centroid` to use the difference of 
+class means or `method = :lda` to use Fisher’s linear discriminant (pooled covariance). If 
+`Xscores` has only one column, the function just selects the orientation that makes the 
+`positive_class` larger on average.
+
+# Examples
+```
+julia> X = [1.0 0.0; 2.0 1.0; 0.0 1.0; 1.0 2.0];
+
+julia> Y = [1 0; 1 0; 0 1; 0 1];
+
+julia> direction, scores = separationaxis(X, Y; method=:centroid);
+julia> direction ≈ [0.7071067811865474, -0.7071067811865474]
+true
+
+julia> scores ≈ [0.7071067811865474, 0.7071067811865474, -0.7071067811865474, -0.7071067811865474]
+true
+```
 """
 function separationaxis(Xscores::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real};
                         method::Symbol=:centroid, positive_class::T=1) where {T<:Integer}
@@ -145,7 +162,8 @@ function separationaxis(Xscores::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Rea
         end
 
         if !any(isfinite, direction) || norm(direction) == 0
-            throw(ArgumentError("Separation axis is undefined (zero vector). Check class means."))
+            throw(ArgumentError(
+                "Separation axis is undefined (zero vector). Check class means."))
         end
 
         direction ./= (norm(direction) + eps(eltype(direction)))

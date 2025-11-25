@@ -1,12 +1,11 @@
 """
-    nmc(Y_true_one_hot::AbstractMatrix{<:Integer},
-        Y_pred_one_hot::AbstractMatrix{<:Integer},
-        weighted::Bool)
+    StatisticalProjections.nmc(Y_true_one_hot::AbstractMatrix{<:Integer}, 
+        Y_pred_one_hot::AbstractMatrix{<:Integer}, weighted::Bool)
 
 Compute the normalized misclassification cost between true and predicted
 one-hot label matrices. If `weighted` is `false`, the function returns the
 plain misclassification rate (`mean` of entry-wise inequality). When `true`,
-class weights inversely proportional to their prevalence are applied so rare
+class weights inversely proportional to their prevalence are applied, so rare
 classes contribute equally.
 
 Arguments
@@ -17,7 +16,7 @@ Arguments
 Returns a `Float64` between 0 and 1.
 """
 function nmc(
-    Y_true_one_hot::AbstractMatrix{<:Integer}, 
+    Y_true_one_hot::AbstractMatrix{<:Integer},
     Y_pred_one_hot::AbstractMatrix{<:Integer},
     weighted::Bool)
 
@@ -50,9 +49,9 @@ end
                       model_accuracy::Float64)
 
 Compute an empirical p-value from permutation test accuracies. Counts how many
-permutation accuracies are less than or equal to (or numerically equal to)
-the observed `model_accuracy`, divides by `length(permutation_accuracies) + 1`
-to include the observed model in the denominator.
+permutation accuracies are less than or numerically equal to the observed `model_accuracy`, 
+divides by `length(permutation_accuracies) + 1` to include the observed model in the 
+denominator.
 
 Arguments
 - `permutation_accuracies`: vector of accuracies from label-shuffled runs.

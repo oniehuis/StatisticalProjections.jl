@@ -1,8 +1,7 @@
-# Cross Validation
+# Internal
 
 ```@docs
-StatisticalProjections.nested_cv
-StatisticalProjections.nested_cv_permutation
+StatisticalProjections.nmc
 StatisticalProjections.optimize_num_latent_variables
 StatisticalProjections.random_batch_indices
 ```

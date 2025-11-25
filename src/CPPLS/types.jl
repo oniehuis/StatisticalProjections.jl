@@ -15,7 +15,7 @@ abstract type AbstractCPPLS end
 
 
 """
-    CPPLS{T1,T2}
+    CPPLS{T1, T2}
 
 Full CPPLS model storing all intermediate quantities required for diagnostics and
 visualisation. `T1` is the floating-point element type used for continuous arrays,
@@ -23,7 +23,7 @@ visualisation. `T1` is the floating-point element type used for continuous array
 
 # Fields
 - `regression_coefficients::Array{T1, 3}` — cumulative regression matrices for the
-   first `k = 1…n_components` latent variables.
+   first `k = 1 … n_components` latent variables.
 - `X_scores::Matrix{T1}` — predictor scores per component.
 - `X_loadings::Matrix{T1}` — predictor loadings per component.
 - `X_loading_weights::Matrix{T1}` — predictor weight vectors per component.

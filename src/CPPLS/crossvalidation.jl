@@ -1,7 +1,6 @@
 """
-    random_batch_indices(strata::AbstractVector{<:Integer},
-                         num_batches::Integer,
-                         rng::AbstractRNG=Random.GLOBAL_RNG)
+    StatisticalProjections.random_batch_indices(strata::AbstractVector{<:Integer},
+        num_batches::Integer, rng::AbstractRNG=Random.GLOBAL_RNG)
 
 Construct stratified folds. For each unique entry in `strata` the corresponding
 sample indices are shuffled with `rng` and then dealt round-robin into
@@ -46,13 +45,13 @@ function random_batch_indices(
 end
 
 """
-    optimize_num_latent_variables(
+    StatisticalProjections.optimize_num_latent_variables(
         X_train_full::AbstractMatrix{<:Real},
         Y_train_full::AbstractMatrix{<:Integer},
         max_components::Integer,
         num_inner_folds::Integer,
         num_inner_folds_repeats::Integer,
-        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}},
+        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
         observation_weights::Union{AbstractVector{<:Real},Nothing},
         Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
         center::Bool,
@@ -72,7 +71,9 @@ count. Argument summary:
 - `num_inner_folds`, `num_inner_folds_repeats`: integers controlling stratified
   folds drawn via `random_batch_indices`.
 - `gamma`: either a scalar γ, a `(lo, hi)` tuple of `Real`s, or a vector mixing
-  both; forwarded to `fit_cppls_light`.
+  both; forwarded to `fit_cppls_light`. Scalars keep γ fixed for every component,
+  while tuples/vectors let each component pick the best γ from the shared
+  candidate set.
 - `observation_weights`: optional weight vector matching the training rows.
 - `Y_auxiliary`: optional auxiliary response matrix aligned with `Y_train_full`.
 - `center`: `Bool` toggling mean-centering in the inner fits.
@@ -159,7 +160,7 @@ end
 
 """
     nested_cv(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Real};
-        gamma::Union{<:Real, <:NTuple{2,<:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}}=0.5,
+        gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real,<:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real},Nothing}=nothing,
         Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing}=nothing,
         center::Bool=true,
@@ -179,8 +180,10 @@ end
 Top-level nested CV driver for CPPLS. Parameter overview:
 
 - `X_predictors`, `Y_responses`: feature and one-hot response matrices.
-- `gamma`: scalar γ, `(lo, hi)` tuple, or per-component vector; passed to
-  `fit_cppls_light`.
+- `gamma`: either a scalar γ, a `(lo, hi)` tuple, or a vector of mixed candidates
+  passed to `fit_cppls_light`. Scalars enforce a single γ for all components,
+  whereas tuples/vectors share candidate ranges from which each component selects
+  its own optimum.
 - `observation_weights`: optional sample weights; `Y_auxiliary`: extra response features.
 - `center`: toggle mean-centering; tolerances control numerical stability inside
   inner fits; `weighted_nmc` chooses between weighted/unweighted misclassification cost.
@@ -310,7 +313,7 @@ summary:
 - `num_permutations`: number of label shuffles (≥ 1).
 - `rng`: governs shuffling of both labels and folds; `verbose`: prints progress.
 
-For each permutation the rows of `Y_responses` are randomly shuffled, then
+For each permutation, the rows of `Y_responses` are randomly shuffled, then
 `nested_cv` is executed with the same hyperparameters, and the mean outer-fold
 accuracy is recorded. Returns a vector of length `num_permutations` containing
 those mean accuracies so you can compute empirical p-values against the

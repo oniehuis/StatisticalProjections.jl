@@ -1,15 +1,12 @@
 """
-    predict(
-        cppls::CPPLS,
-        X::AbstractMatrix{<:Real},
-        n_components::Integer = size(cppls.regression_coefficients, 3)
-    ) -> Array{Float64, 3}
+    predict(cppls::CPPLS, X::AbstractMatrix{<:Real},
+        n_components::Integer=size(cppls.regression_coefficients, 3)) -> Array{Float64, 3}
 
 Generate predictions from a fitted CPPLS model for a given input matrix `X`.
 
 # Arguments
-- `cppls`: A fitted CPPLS model, containing regression coefficients, mean values of 
-  predictors and responses, etc.
+- `cppls`: A fitted CPPLS model, containing regression coefficients and mean values of 
+  predictors and responses.
 - `X`: A matrix of predictor variables of size `(n_samples_X, n_features)`.
 - `n_components` (optional): Number of CPPLS components to use for prediction. Defaults to 
   the full number trained in the model. Must not exceed the number available.
@@ -20,10 +17,6 @@ Generate predictions from a fitted CPPLS model for a given input matrix `X`.
   - `n_targets_Y`: Number of target variables in the CPPLS model
   - `n_components`: Number of components used for prediction
   Each `[:,:,i]` slice corresponds to predictions using the first `i` components.
-
-# Example
-```julia
-```
 """
 function predict(
     cppls::AbstractCPPLS,
@@ -72,10 +65,6 @@ after adjusting for overcounted means.
   response, to correct for repeated addition of the mean in each component.
 - For each sample, finds the class index with the highest adjusted prediction.
 - Converts the predicted class indices to a one-hot encoded matrix.
-
-# Example
-```julia
-```
 """
 function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real, 3})
     n_components = size(predictions, 3)
@@ -107,10 +96,6 @@ Project input data onto the latent components of a fitted CPPLS model to compute
 # Details
 - Centers the input matrix by subtracting the training mean `X_means`.
 - Multiplies the centered data by the model's projection matrix to obtain component scores.
-
-Example
-```julia
-```
 """
 project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) = 
     (X .- cppls.X_means) * cppls.projection

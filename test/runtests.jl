@@ -21,6 +21,15 @@ end
     include(joinpath("CPPLS", "preprocessing.jl"))
 end
 
+
+@testset "CPPLS/crossvalidation" begin
+    include(joinpath("CPPLS", "crossvalidation.jl"))
+end
+
+@testset "CPPLS/metrics" begin
+    include(joinpath("CPPLS", "metrices.jl"))
+end
+
 @testset "Utils/encoding" begin
     include(joinpath("Utils", "encoding.jl"))
 end
@@ -31,12 +40,4 @@ end
 
 @testset "Utils/statistics" begin
     include(joinpath("Utils", "statistics.jl"))
-end
-
-@testset "Evaluation/crossvalidation" begin
-    include(joinpath("Evaluation", "crossvalidation.jl"))
-end
-
-@testset "Evaluation/metrics" begin
-    include(joinpath("Evaluation", "metrices.jl"))
 end
