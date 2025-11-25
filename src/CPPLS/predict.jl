@@ -14,9 +14,23 @@ Generate predictions from a fitted CPPLS model for a given input matrix `X`.
 # Returns
 - A 3-dimensional array of shape `(n_samples_X, n_targets_Y, n_components)`:
   - `n_samples_X`: Number of input samples (rows of `X`)
-  - `n_targets_Y`: Number of target variables in the CPPLS model
-  - `n_components`: Number of components used for prediction
+- `n_targets_Y`: Number of target variables in the CPPLS model
+- `n_components`: Number of components used for prediction
   Each `[:,:,i]` slice corresponds to predictions using the first `i` components.
+
+# Example
+```
+julia> coeffs = reshape(Float64[0.5, 1.0], 2, 1, 1);  # two predictors, one target
+
+julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0], 1, 1);
+
+julia> model = CPPLSLight(coeffs, X_mean, Y_mean);
+
+julia> Xnew = [1.0 2.0; 3.0 4.0];
+
+julia> predict(model, Xnew) ≈ [2.5; 5.5]
+true
+```
 """
 function predict(
     cppls::AbstractCPPLS,
@@ -65,6 +79,25 @@ after adjusting for overcounted means.
   response, to correct for repeated addition of the mean in each component.
 - For each sample, finds the class index with the highest adjusted prediction.
 - Converts the predicted class indices to a one-hot encoded matrix.
+
+# Example
+```
+julia> coeffs = reshape(Float64[1, -1, 0.5, -0.5], 2, 2, 1);  # two predictors, two classes
+
+julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0 0.0], 1, 2);
+
+julia> model = CPPLSLight(coeffs, X_mean, Y_mean);
+
+julia> Xnew = [2.0 1.0; 0.5 3.0];
+
+julia> raw = predict(model, Xnew);  # size 2×2×1
+
+julia> raw ≈ [1.0 0.5; -2.5 -1.25]
+true
+
+julia> predictonehot(model, raw) ≈ [1 0; 0 1]
+true
+```
 """
 function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real, 3})
     n_components = size(predictions, 3)
@@ -81,21 +114,38 @@ end
 """
     project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) -> AbstractMatrix
 
-Project input data onto the latent components of a fitted CPPLS model to compute scores.
+Compute latent component scores by projecting new predictors `X` with a fitted CPPLS model.
 
 # Arguments
-- `cppls`: A fitted CPPLS model object containing the projection matrix (`projection`) and 
-  the mean of the predictor variables (`X_means`).
-- `X`: A matrix of predictor variables with dimensions `(n_samples_X, n_features)`. These 
-  should match the feature structure used to train the model.
+- `cppls`: Any CPPLS model (e.g., `CPPLS` or `CPPLSLight`) providing `X_means` and
+  `projection`.
+- `X`: Predictor matrix shaped like the training data (`n_samples × n_features`).
 
 # Returns
-- A matrix of size `(n_samples_X, n_components)`, where each row contains the latent scores 
-  for the corresponding sample in `X`.
+- Matrix of size `(n_samples, n_components)` containing the component scores.
 
 # Details
-- Centers the input matrix by subtracting the training mean `X_means`.
-- Multiplies the centered data by the model's projection matrix to obtain component scores.
+- Centers `X` by subtracting `cppls.X_means`, then multiplies by the projection matrix.
+
+# Example
+```
+julia> struct DemoCPPLS <: StatisticalProjections.AbstractCPPLS
+           projection::Matrix{Float64}
+           X_means::Matrix{Float64}
+       end
+
+julia> proj = reshape([1.0, 0.5], 2, 1)
+2×1 Matrix{Float64}:
+ 1.0
+ 0.5
+
+julia> demo = DemoCPPLS(proj, reshape([0.5, 0.5], 1, :));
+
+julia> project(demo, [1.0 2.0; 3.0 4.0]) ≈ [1.25; 4.25]
+true
+```
+In practice, `demo` would be the `CPPLS` object returned by `fit_cppls`, which already
+contains the appropriate projection matrix and predictor means.
 """
-project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) = 
+project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) =
     (X .- cppls.X_means) * cppls.projection

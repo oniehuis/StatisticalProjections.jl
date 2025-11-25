@@ -2,11 +2,10 @@
     StatisticalProjections.nmc(Y_true_one_hot::AbstractMatrix{<:Integer}, 
         Y_pred_one_hot::AbstractMatrix{<:Integer}, weighted::Bool)
 
-Compute the normalized misclassification cost between true and predicted
-one-hot label matrices. If `weighted` is `false`, the function returns the
-plain misclassification rate (`mean` of entry-wise inequality). When `true`,
-class weights inversely proportional to their prevalence are applied, so rare
-classes contribute equally.
+Compute the normalized misclassification cost between true and predicted one-hot label 
+matrices. If `weighted` is `false`, the function returns the plain misclassification rate 
+(`mean` of entry-wise inequality). When `true`, class weights inversely proportional to 
+their prevalence are applied, so rare classes contribute equally.
 
 Arguments
 - `Y_true_one_hot`: `(n_samples × n_classes)` ground truth one-hot labels.
@@ -14,6 +13,19 @@ Arguments
 - `weighted`: toggle class-balanced weighting.
 
 Returns a `Float64` between 0 and 1.
+
+# Example
+```
+julia> Y_true = [1 0 0; 0 1 0; 0 1 0];
+
+julia> Y_pred = [1 0 0; 0 0 1; 0 1 0];
+
+julia> StatisticalProjections.nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
+true
+
+julia> StatisticalProjections.nmc(Y_true, Y_pred, true) ≈ 0.25
+true
+```
 """
 function nmc(
     Y_true_one_hot::AbstractMatrix{<:Integer},
@@ -48,14 +60,19 @@ end
     calculate_p_value(permutation_accuracies::AbstractVector{<:Real},
                       model_accuracy::Float64)
 
-Compute an empirical p-value from permutation test accuracies. Counts how many
-permutation accuracies are less than or numerically equal to the observed `model_accuracy`, 
-divides by `length(permutation_accuracies) + 1` to include the observed model in the 
-denominator.
+Compute an empirical p-value from permutation test accuracies. Counts how many permutation 
+accuracies are less than or numerically equal to the observed `model_accuracy`, divides by 
+`length(permutation_accuracies) + 1` to include the observed model in the denominator.
 
 Arguments
 - `permutation_accuracies`: vector of accuracies from label-shuffled runs.
 - `model_accuracy`: accuracy achieved by the true model.
+
+# Example
+```
+julia> calculate_p_value([0.4, 0.5, 0.55, 0.6], 0.58) ≈ 0.6
+true
+```
 """
 function calculate_p_value(
     permutation_accuracies::AbstractVector{<:Real}, 

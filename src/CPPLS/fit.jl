@@ -73,6 +73,26 @@ A `CPPLS` object containing the following fields:
   correlation maximization. It is optimized within the specified bounds (`gamma_bounds`).
 - If `Y_auxiliary` is provided, it is concatenated with `Y` to form a combined response 
   matrix (`Y_combined`), which is used during the fitting process.
+
+# Example
+```
+julia> X = Float64[1 0 2
+                   0 1 2
+                   1 1 1
+                   2 3 0
+                   3 2 1];
+
+julia> labels = ["red", "blue", "red", "blue", "red"];
+
+julia> Y, classes = labels_to_one_hot(labels);
+
+julia> model = fit_cppls(X, Y, 2; gamma=(0.7, 1.0));
+
+julia> model.X_means ≈ Matrix([1.4 1.4 1.2])
+
+julia> model.gammas ≈ [0.700185836799654, 0.9366214237592033]
+true
+```
 """
 function fit_cppls(
     X_predictors::AbstractMatrix{<:Real},
@@ -157,6 +177,24 @@ only the stacked regression coefficients plus the `X`/`Y` centering means.
 # Notes
 - Use this when you only need predictions, not the intermediate diagnostics.
 - The same preprocessing, weighting, and tolerance settings apply as in `fit_cppls`.
+
+# Example
+```
+julia> X = Float64[1 0 2
+                   0 1 2
+                   1 1 1
+                   2 3 0
+                   3 2 1];
+
+julia> labels = ["red", "blue", "red", "blue", "red"];
+
+julia> Y, classes = labels_to_one_hot(labels);
+
+julia> model = fit_cppls_light(X, Y, 2; gamma=(0.7, 1.0));
+
+julia> model.X_means ≈ Matrix([1.4 1.4 1.2])
+true
+```
 """
 function fit_cppls_light(
     X_predictors::AbstractMatrix{<:Real},

@@ -8,6 +8,17 @@ sample indices are shuffled with `rng` and then dealt round-robin into
 folds. Throws if `num_batches` is less than `1` or larger than the number of
 samples. Returns a vector-of-vectors of 1-based indices, each representing one
 fold.
+
+# Example
+```
+julia> using Random; rng = MersenneTwister(1);
+
+julia> folds = StatisticalProjections.random_batch_indices([1, 1, 2, 2, 2, 1], 3, rng)
+3-element Vector{Vector{Int64}}:
+ [5, 6]
+ [4, 1]
+ [3, 2]
+```
 """
 function random_batch_indices(
     strata::AbstractVector{<:Integer},
@@ -82,7 +93,34 @@ count. Argument summary:
 - `weighted_nmc`: choose class-weighted misclassification cost (`true` by default).
 - `rng`: random-number generator used for shuffling.
 - `verbose`: when `true`, prints per-fold diagnostics.
+# Example
+```
+julia> using Random
 
+julia> X = rand(MersenneTwister(1), 12, 4);
+
+julia> labels = repeat(["red", "blue", "green"], 4);
+
+julia> Y, _ = labels_to_one_hot(labels);
+
+julia> k = StatisticalProjections.optimize_num_latent_variables(
+             X, Y,
+             2,
+             3, 3,
+             0.5,
+             nothing, nothing,
+             true,
+             1e-12, eps(Float64), 1e-10,
+             1e-4,
+             true,
+             MersenneTwister(2),
+             false);
+[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
+julia> k
+1
+```
 For every inner repeat the routine fits a `CPPLSLight` with `max_components`,
 scores validation folds for each partial component count using `predict` +
 `predictonehot`, evaluates `nmc`, records the argmin, and finally returns the
@@ -198,6 +236,40 @@ CV loop selects the optimal component count via `optimize_num_latent_variables`,
 the final `CPPLSLight` is fit on the outer training data with that count, and
 `accuracy = 1 - nmc` is computed on the outer test split. Returns a tuple
 `(outer_fold_accuracies, optimal_num_latent_variables)`.
+
+# Example
+```
+julia> using Random
+
+julia> X = rand(MersenneTwister(1), 12, 4);
+
+julia> labels = repeat(["red", "blue", "green"], 4);
+
+julia> Y, _ = labels_to_one_hot(labels);
+
+julia> accs, comps = nested_cv(
+           X, Y;
+           gamma=0.5,
+           num_outer_folds=3,
+           num_inner_folds=2,
+           max_components=2,
+           rng=MersenneTwister(2),
+           verbose=false);
+[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
+julia> accs ≈ [1.1102230246251565e-16, 0.0, 0.0]
+true
+
+julia> comps ≈ [1, 1, 1]
+true
+```
 """
 function nested_cv(
     X_predictors::AbstractMatrix{<:Real}, 
@@ -318,6 +390,47 @@ For each permutation, the rows of `Y_responses` are randomly shuffled, then
 accuracy is recorded. Returns a vector of length `num_permutations` containing
 those mean accuracies so you can compute empirical p-values against the
 unpermuted nested-CV accuracy.
+
+# Example
+```
+julia> using Random
+
+julia> X = rand(MersenneTwister(1), 12, 4);
+
+julia> labels = repeat(["red", "blue", "green"], 4);
+
+julia> Y, classes = labels_to_one_hot(labels);
+
+julia> perms = nested_cv_permutation(X, Y;
+                 gamma=0.5,
+                 num_outer_folds=3,
+                 num_inner_folds=2,
+                 max_components=2,
+                 num_permutations=2,
+                 verbose=false,
+                 rng=MersenneTwister(2));
+[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 2 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 3 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 1 (size = 4) not evenly divisible by 3 batches.
+[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 2 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 3 (size = 3) not evenly divisible by 2 batches.
+[ Info: Stratum 1 (size = 3) not evenly divisible by 2 batches.
+
+julia> perms ≈ [0.3055555555555556, 0.22222222222222224]
+true
+```
 """
 function nested_cv_permutation(
     X_predictors::AbstractMatrix{<:Real}, 
