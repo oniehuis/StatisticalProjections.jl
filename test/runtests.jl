@@ -21,6 +21,10 @@ end
     include(joinpath("CPPLS", "preprocessing.jl"))
 end
 
+@testset "CPPLS/visualization" begin
+    include(joinpath("CPPLS", "visualization.jl"))
+end
+
 
 @testset "CPPLS/crossvalidation" begin
     include(joinpath("CPPLS", "crossvalidation.jl"))

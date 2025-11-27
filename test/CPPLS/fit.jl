@@ -182,10 +182,8 @@ end
     cat_labels = categorical(["g1", "g2", "g1"])
     plain_labels = ["g1", "g2", "g1"]
 
-    cat_method = which(
-        StatisticalProjections.fit_cppls,
-        Tuple{typeof(X), typeof(cat_labels), Int},
-    )
+    cat_method =
+        which(StatisticalProjections.fit_cppls, Tuple{typeof(X),typeof(cat_labels),Int})
 
     cat_sig = Base.unwrap_unionall(cat_method.sig)
     @test cat_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
@@ -269,10 +267,11 @@ end
 
     light_method = which(
         StatisticalProjections.fit_cppls_light,
-        Tuple{typeof(X), typeof(cat_labels), Int},
+        Tuple{typeof(X),typeof(cat_labels),Int},
     )
     light_sig = Base.unwrap_unionall(light_method.sig)
-    @test light_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
+    @test light_sig.parameters[3].name.wrapper ===
+          CategoricalArrays.AbstractCategoricalArray
 
     cat_light = StatisticalProjections.fit_cppls_light(X, cat_labels, 2; gamma = 0.5)
     plain_light = StatisticalProjections.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)

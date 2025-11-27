@@ -297,7 +297,7 @@ end
 
     nested_method = which(
         StatisticalProjections.nested_cv,
-        Tuple{typeof(CROSSVAL_X), typeof(CROSSVAL_LABELS)},
+        Tuple{typeof(CROSSVAL_X),typeof(CROSSVAL_LABELS)},
     )
     nested_sig = Base.unwrap_unionall(nested_method.sig)
     @test nested_sig.parameters[3].name.wrapper ===
@@ -341,6 +341,23 @@ end
     end
     @test length(perms_labels) == 2
 
+    perms_plain = suppress_info() do
+        StatisticalProjections.nested_cv_permutation(
+            CROSSVAL_X,
+            CROSSVAL_LABELS_PLAIN;
+            num_outer_folds = 2,
+            num_outer_folds_repeats = 2,
+            num_inner_folds = 2,
+            num_inner_folds_repeats = 2,
+            max_components = 1,
+            num_permutations = 2,
+            center = false,
+            rng = StatisticalProjections.MersenneTwister(222),
+            verbose = false,
+        )
+    end
+    @test length(perms_plain) == length(perms_labels)
+
     real_vector = randn(size(CROSSVAL_X, 1))
     @test_throws ArgumentError suppress_info() do
         StatisticalProjections.nested_cv_permutation(
@@ -376,9 +393,8 @@ end
 
     perm_method = which(
         StatisticalProjections.nested_cv_permutation,
-        Tuple{typeof(CROSSVAL_X), typeof(CROSSVAL_LABELS)},
+        Tuple{typeof(CROSSVAL_X),typeof(CROSSVAL_LABELS)},
     )
     perm_sig = Base.unwrap_unionall(perm_method.sig)
-    @test perm_sig.parameters[3].name.wrapper ===
-          CategoricalArrays.AbstractCategoricalArray
+    @test perm_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
 end

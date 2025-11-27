@@ -218,7 +218,7 @@ merge_axis_defaults(axis::NamedTuple) = merge(SCOREPLOT_AXIS_DEFAULTS, axis)
 merge_axis_defaults(axis) = SCOREPLOT_AXIS_DEFAULTS
 
 function scoreplot_kwdict(kwargs)
-    kwdict = Dict{Symbol,Any}(kwargs)
+    kwdict = Dict{Symbol,Any}(pairs(kwargs))
     haskey(kwdict, :color) && (kwdict[:color_manual] = true)
     return kwdict
 end
