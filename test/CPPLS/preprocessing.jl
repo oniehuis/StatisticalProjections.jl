@@ -6,7 +6,7 @@
     centered_unweighted, mean_unweighted = StatisticalProjections.center_mean(M, nothing)
 
     expected_weighted_mean = (weights' * M) / sum(weights)
-    expected_unweighted_mean = StatisticalProjections.mean(M, dims=1)
+    expected_unweighted_mean = StatisticalProjections.mean(M, dims = 1)
 
     @test mean_weighted == expected_weighted_mean
     @test all(isapprox.(centered_weighted, M .- expected_weighted_mean))
@@ -22,7 +22,7 @@ end
     unweighted_cs = StatisticalProjections.centerscale(M, nothing)
 
     expected_weighted = (M .- (weights' * M) / sum(weights)) .* weights
-    expected_unweighted = M .- StatisticalProjections.mean(M, dims=1)
+    expected_unweighted = M .- StatisticalProjections.mean(M, dims = 1)
 
     @test weighted_cs == expected_weighted
     @test unweighted_cs == expected_unweighted
@@ -44,11 +44,20 @@ end
     Y_aux = Float32[0.1 0.2; 0.2 0.3; 0.3 0.4; 0.4 0.5]
     weights = Float32[1, 2, 1, 2]
 
-    X_prep, Y_prep, Y_combined, obs_weights, X_mean, Y_mean,
-    X_deflated, X_loading_weights, X_loadings, Y_loadings,
-    small_norm_flags, regression_coeffs, n_samples, n_targets =
-        StatisticalProjections.cppls_prepare_data(
-            X, Y, 2, Y_aux, weights, true)
+    X_prep,
+    Y_prep,
+    Y_combined,
+    obs_weights,
+    X_mean,
+    Y_mean,
+    X_deflated,
+    X_loading_weights,
+    X_loadings,
+    Y_loadings,
+    small_norm_flags,
+    regression_coeffs,
+    n_samples,
+    n_targets = StatisticalProjections.cppls_prepare_data(X, Y, 2, Y_aux, weights, true)
 
     @test X_prep isa Matrix{Float64}
     @test Y_prep isa Matrix{Float64}
@@ -65,6 +74,20 @@ end
     @test n_samples == size(X, 1)
     @test n_targets == size(Y, 2)
 
-    @test_throws DimensionMismatch StatisticalProjections.cppls_prepare_data(X, Y[1:3, :], 2, nothing, nothing, true)
-    @test_throws DimensionMismatch StatisticalProjections.cppls_prepare_data(X, Y, 2, nothing, [1, 2, 3], true)
+    @test_throws DimensionMismatch StatisticalProjections.cppls_prepare_data(
+        X,
+        Y[1:3, :],
+        2,
+        nothing,
+        nothing,
+        true,
+    )
+    @test_throws DimensionMismatch StatisticalProjections.cppls_prepare_data(
+        X,
+        Y,
+        2,
+        nothing,
+        [1, 2, 3],
+        true,
+    )
 end

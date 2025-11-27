@@ -1,22 +1,24 @@
 function Iᵣ(rowcount::Integer, columncount::Integer)
     M = zeros(rowcount, columncount)
-    @inbounds for i in 1:min(rowcount, columncount)
+    @inbounds for i = 1:min(rowcount, columncount)
         M[i, i] = 1
     end
     M
 end
 
 
-function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}, 
-    ::Nothing)
-    
+function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}, ::Nothing)
+
     cca_decomposition(X, Y)
 end
 
 
-function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}, 
-    observation_weights::AbstractVector{<:Real})
-    
+function cca_decomposition(
+    X::AbstractMatrix{<:Real},
+    Y::AbstractMatrix{<:Real},
+    observation_weights::AbstractVector{<:Real},
+)
+
     cca_decomposition(X .* observation_weights, Y .* observation_weights)
 end
 
@@ -29,15 +31,15 @@ function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
 
     dx = rank(qx.R)
     dy = rank(qy.R)
-    
-    @inbounds  if dx == 0
+
+    @inbounds if dx == 0
         throw(ErrorException("X has rank 0"))
     end
     @inbounds if dy == 0
         throw(ErrorException("Y has rank 0"))
     end
 
-    A = ((qx.Q' * qy.Q) * Iᵣ(n_rows, dy))[1:dx, :]
+    A = ((qx.Q'*qy.Q)*Iᵣ(n_rows, dy))[1:dx, :]
     left_singular_vecs, singular_vals, _ = svd(A)
     max_canonical_correlation = clamp(first(singular_vals), 0.0, 1.0)
 
@@ -45,51 +47,63 @@ function cca_decomposition(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
 end
 
 
-cca_corr(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing}) =
-    last(cca_decomposition(X, Y, observation_weights))
+cca_corr(
+    X::AbstractMatrix{<:Real},
+    Y::AbstractMatrix{<:Real},
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+) = last(cca_decomposition(X, Y, observation_weights))
 
 
-function cca_coeffs_and_corr(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}, 
-    observation_weights::Union{AbstractVector{<:Real}, Nothing})
-    ((n_rows, n_cols, qx, dx, dy, left_singular_vectors, max_canonical_correlation) 
-        = cca_decomposition(X, Y, observation_weights))
+function cca_coeffs_and_corr(
+    X::AbstractMatrix{<:Real},
+    Y::AbstractMatrix{<:Real},
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+)
+    (
+        (n_rows, n_cols, qx, dx, dy, left_singular_vectors, max_canonical_correlation) =
+            cca_decomposition(X, Y, observation_weights)
+    )
 
     canonical_coefficients = qx.R[1:dx, 1:dx] \ left_singular_vectors
     canonical_coefficients *= sqrt(n_rows - 1)
 
     remaining_rows = n_cols - size(canonical_coefficients, 1)
     if remaining_rows > 0
-        canonical_coefficients = vcat(canonical_coefficients, zeros(remaining_rows, 
-            min(dx, dy)))
+        canonical_coefficients =
+            vcat(canonical_coefficients, zeros(remaining_rows, min(dx, dy)))
     end
 
     canonical_coefficients[invperm(qx.p), :], max_canonical_correlation
 end
 
 
-cca_coeffs(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real}, 
-    observation_weights::Union{AbstractVector{<:Real}, Nothing}) =
-    first(cca_coeffs_and_corr(X, Y, observation_weights))
+cca_coeffs(
+    X::AbstractMatrix{<:Real},
+    Y::AbstractMatrix{<:Real},
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+) = first(cca_coeffs_and_corr(X, Y, observation_weights))
 
 
 function correlation(
     X_deflated::AbstractMatrix{<:Real},
-    Y_combined::AbstractMatrix{<:Real}, 
-    observation_weights::Union{AbstractVector{<:Real}, Nothing})
+    Y_combined::AbstractMatrix{<:Real},
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+)
 
-    correlation(centerscale(X_deflated, observation_weights), 
-        centerscale(Y_combined, observation_weights))
+    correlation(
+        centerscale(X_deflated, observation_weights),
+        centerscale(Y_combined, observation_weights),
+    )
 end
 
 
 function correlation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
     n = size(X, 1)
-    X_standard_deviations = sqrt.(mean(X .^ 2, dims=1))
+    X_standard_deviations = sqrt.(mean(X .^ 2, dims = 1))
     zero_std_mask = vec(X_standard_deviations .== 0.0)
     X_standard_deviations[zero_std_mask] .= 1
 
-    col_norms = sqrt.(mean(Y .^ 2, dims=1))
+    col_norms = sqrt.(mean(Y .^ 2, dims = 1))
     X_Y_correlations = (X' * Y) ./ (n * (X_standard_deviations' * col_norms))
 
     X_standard_deviations[zero_std_mask] .= 0
@@ -99,8 +113,9 @@ function correlation(X::AbstractMatrix{<:Real}, Y::AbstractMatrix{<:Real})
 end
 
 
-function compute_variance_weights(X_standard_deviations::AbstractMatrix{<:Real}
-    )::Matrix{Float64}
+function compute_variance_weights(
+    X_standard_deviations::AbstractMatrix{<:Real},
+)::Matrix{Float64}
     mask = X_standard_deviations .== maximum(X_standard_deviations)
     (mask .* X_standard_deviations)'
 end
@@ -108,38 +123,45 @@ end
 
 function compute_correlation_weights(X_Y_correlations::AbstractMatrix{<:Real})
     mask = X_Y_correlations .== maximum(X_Y_correlations)
-    sum(mask .* X_Y_correlations, dims=2)
+    sum(mask .* X_Y_correlations, dims = 2)
 end
 
 
 function compute_general_weights(
-    X_standard_deviations::AbstractMatrix{<:Real}, 
+    X_standard_deviations::AbstractMatrix{<:Real},
     X_Y_correlations::AbstractMatrix{<:Real},
-    gamma::Real, 
-    correlation_signs::AbstractMatrix{<:Real})
+    gamma::Real,
+    correlation_signs::AbstractMatrix{<:Real},
+)
 
     transformed_X_standard_deviations = X_standard_deviations .^ ((1 - gamma) / gamma)
     transformed_X_Y_correlations = X_Y_correlations .^ (gamma / (1 - gamma))
-    (correlation_signs .* transformed_X_Y_correlations) .* transformed_X_standard_deviations'
+    (correlation_signs .* transformed_X_Y_correlations) .*
+    transformed_X_standard_deviations'
 end
 
 
 function evaluate_canonical_correlation(
     gamma::Real,
-    X_deflated::AbstractMatrix{<:Real}, 
+    X_deflated::AbstractMatrix{<:Real},
     X_standard_deviations::AbstractMatrix{<:Real},
     X_Y_correlations::AbstractMatrix{<:Real},
     correlation_signs::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing})
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+)
 
     initial_weights = if gamma == 0
         compute_variance_weights(X_standard_deviations)
     elseif gamma == 1
         compute_correlation_weights(X_Y_correlations)
     else
-        compute_general_weights(X_standard_deviations, X_Y_correlations, gamma, 
-            correlation_signs)
+        compute_general_weights(
+            X_standard_deviations,
+            X_Y_correlations,
+            gamma,
+            correlation_signs,
+        )
     end
 
     X_projected = X_deflated * initial_weights
@@ -155,14 +177,27 @@ function compute_best_gamma(
     X_Y_correlations::AbstractMatrix{<:Real},
     correlation_signs::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing}, 
-    gamma_bounds::NTuple{2, <:Real},
-    gamma_optimization_tolerance::Real)
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+    gamma_bounds::NTuple{2,<:Real},
+    gamma_optimization_tolerance::Real,
+)
 
-    result = optimize(gamma -> evaluate_canonical_correlation(gamma, X_deflated, 
-        X_standard_deviations, X_Y_correlations, correlation_signs, Y_responses, 
-        observation_weights), first(gamma_bounds), last(gamma_bounds), Brent();
-        rel_tol=gamma_optimization_tolerance, abs_tol=gamma_optimization_tolerance) 
+    result = optimize(
+        gamma -> evaluate_canonical_correlation(
+            gamma,
+            X_deflated,
+            X_standard_deviations,
+            X_Y_correlations,
+            correlation_signs,
+            Y_responses,
+            observation_weights,
+        ),
+        first(gamma_bounds),
+        last(gamma_bounds),
+        Brent();
+        rel_tol = gamma_optimization_tolerance,
+        abs_tol = gamma_optimization_tolerance,
+    )
 
     Optim.converged(result) || @warn("gamma optimization failed to converge.")
 
@@ -178,31 +213,51 @@ function compute_best_gamma(
     X_Y_correlations::AbstractMatrix{<:Real},
     correlation_signs::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing}, 
-    gamma_bounds::AbstractVector{<:Union{NTuple{2, <:Real}, Real}},
-    gamma_optimization_tolerance::Real)
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+    gamma_bounds::AbstractVector{<:Union{NTuple{2,<:Real},Real}},
+    gamma_optimization_tolerance::Real,
+)
 
     n = length(gamma_bounds)
     gamma_values = zeros(Float64, n)
     canonical_correlations = zeros(Float64, n)
 
-    for i in 1:n
-        if gamma_bounds[i] isa NTuple{2, <:Real}
+    for i = 1:n
+        if gamma_bounds[i] isa NTuple{2,<:Real}
             if first(gamma_bounds[i]) ≠ last(gamma_bounds[i])
-                gamma_values[i], canonical_correlations[i] = compute_best_gamma(X_deflated, 
-                    X_standard_deviations, X_Y_correlations, correlation_signs, Y_responses, 
-                    observation_weights, gamma_bounds[i], gamma_optimization_tolerance)
+                gamma_values[i], canonical_correlations[i] = compute_best_gamma(
+                    X_deflated,
+                    X_standard_deviations,
+                    X_Y_correlations,
+                    correlation_signs,
+                    Y_responses,
+                    observation_weights,
+                    gamma_bounds[i],
+                    gamma_optimization_tolerance,
+                )
             else
                 gamma_values[i] = first(gamma_bounds[i])
                 canonical_correlations[i] = evaluate_canonical_correlation(
-                    gamma_values[i], X_deflated, X_standard_deviations, X_Y_correlations, 
-                    correlation_signs, Y_responses, observation_weights)
+                    gamma_values[i],
+                    X_deflated,
+                    X_standard_deviations,
+                    X_Y_correlations,
+                    correlation_signs,
+                    Y_responses,
+                    observation_weights,
+                )
             end
         else
             gamma_values[i] = gamma_bounds[i]
             canonical_correlations[i] = evaluate_canonical_correlation(
-                gamma_values[i], X_deflated, X_standard_deviations, X_Y_correlations, 
-                correlation_signs, Y_responses, observation_weights)
+                gamma_values[i],
+                X_deflated,
+                X_standard_deviations,
+                X_Y_correlations,
+                correlation_signs,
+                Y_responses,
+                observation_weights,
+            )
         end
     end
 
@@ -219,17 +274,28 @@ function compute_best_loadings(
     X_Y_correlations::AbstractMatrix{<:Real},
     correlation_signs::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing}, 
-    gamma_bounds::Union{<:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+    gamma_bounds::Union{
+        <:NTuple{2,<:Real},
+        <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
+    },
     gamma_optimization_tolerance::Real,
-    n_targets_Y_combined::Integer)
+    n_targets_Y_combined::Integer,
+)
 
-    observation_weights = (isnothing(observation_weights) ? observation_weights : 
-        sqrt.(observation_weights))
+    observation_weights =
+        (isnothing(observation_weights) ? observation_weights : sqrt.(observation_weights))
 
-    gamma, canonical_correlation = compute_best_gamma(X_deflated, X_standard_deviations, 
-        X_Y_correlations, correlation_signs, Y_responses, observation_weights,
-        gamma_bounds, gamma_optimization_tolerance)
+    gamma, canonical_correlation = compute_best_gamma(
+        X_deflated,
+        X_standard_deviations,
+        X_Y_correlations,
+        correlation_signs,
+        Y_responses,
+        observation_weights,
+        gamma_bounds,
+        gamma_optimization_tolerance,
+    )
 
     if gamma == 0
         optimal_loadings = vec(compute_variance_weights(X_standard_deviations))
@@ -238,8 +304,12 @@ function compute_best_loadings(
         optimal_loadings = vec(compute_correlation_weights(X_Y_correlations))
         canonical_coefficients = fill(NaN, (n_targets_Y_combined, 1))
     else
-        initial_weights = compute_general_weights(X_standard_deviations, X_Y_correlations, 
-            gamma, correlation_signs)
+        initial_weights = compute_general_weights(
+            X_standard_deviations,
+            X_Y_correlations,
+            gamma,
+            correlation_signs,
+        )
 
         X_projected = X_deflated * initial_weights
         canonical_coefficients = cca_coeffs(X_projected, Y_responses, observation_weights)
@@ -253,44 +323,66 @@ end
 
 function compute_cppls_weights(
     X_deflated::AbstractMatrix{<:Real},
-    Y_combined::AbstractMatrix{<:Real}, 
+    Y_combined::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing},
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
     gamma::Real,
-    gamma_optimization_tolerance::Real)
+    gamma_optimization_tolerance::Real,
+)
 
     if gamma == 0.5
 
         initial_weights = X_deflated' * Y_combined
         canonical_coefficients, max_canonical_correlation = cca_coeffs_and_corr(
-            X_deflated * initial_weights, Y_responses, observation_weights)
+            X_deflated * initial_weights,
+            Y_responses,
+            observation_weights,
+        )
 
         optimal_loadings = initial_weights * canonical_coefficients[:, 1]
 
-        return optimal_loadings, max_canonical_correlation^2, canonical_coefficients[:, 1], 0.5
+        return optimal_loadings,
+        max_canonical_correlation^2,
+        canonical_coefficients[:, 1],
+        0.5
     else
-        return compute_cppls_weights(X_deflated, Y_combined, Y_responses, observation_weights,
-            (gamma, gamma), gamma_optimization_tolerance)
+        return compute_cppls_weights(
+            X_deflated,
+            Y_combined,
+            Y_responses,
+            observation_weights,
+            (gamma, gamma),
+            gamma_optimization_tolerance,
+        )
     end
 end
 
 
 function compute_cppls_weights(
     X_deflated::AbstractMatrix{<:Real},
-    Y_combined::AbstractMatrix{<:Real}, 
+    Y_combined::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
-    observation_weights::Union{AbstractVector{<:Real}, Nothing},
-    gamma::Union{<:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}},
-    gamma_optimization_tolerance::Real)
+    observation_weights::Union{AbstractVector{<:Real},Nothing},
+    gamma::Union{<:NTuple{2,<:Real},<:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}}},
+    gamma_optimization_tolerance::Real,
+)
 
-    X_Y_correlations, X_standard_deviations = correlation(X_deflated, Y_combined, 
-        observation_weights)
-    
+    X_Y_correlations, X_standard_deviations =
+        correlation(X_deflated, Y_combined, observation_weights)
+
     correlation_signs = sign.(X_Y_correlations)
     X_Y_correlations = abs.(X_Y_correlations) ./ maximum(X_Y_correlations)
     X_standard_deviations /= maximum(X_standard_deviations)
 
-    compute_best_loadings(X_deflated, X_standard_deviations, X_Y_correlations, 
-        correlation_signs, Y_responses, observation_weights, gamma, 
-        gamma_optimization_tolerance, size(Y_combined, 2))
+    compute_best_loadings(
+        X_deflated,
+        X_standard_deviations,
+        X_Y_correlations,
+        correlation_signs,
+        Y_responses,
+        observation_weights,
+        gamma,
+        gamma_optimization_tolerance,
+        size(Y_combined, 2),
+    )
 end

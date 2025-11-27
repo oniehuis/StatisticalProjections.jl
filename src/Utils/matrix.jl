@@ -23,6 +23,6 @@ function find_invariant_and_variant_columns(M::AbstractMatrix)
             push!(variant_columns, j)
         end
     end
-    
+
     invariant_columns, variant_columns
 end

@@ -26,7 +26,11 @@ end
     Y_pred = [1 0; 1 0]
 
     @test_throws DimensionMismatch StatisticalProjections.nmc(Y_true, Y_pred[1:1, :], false)
-    @test_throws ErrorException StatisticalProjections.nmc(Y_true[1:0, :], Y_pred[1:0, :], true)
+    @test_throws ErrorException StatisticalProjections.nmc(
+        Y_true[1:0, :],
+        Y_pred[1:0, :],
+        true,
+    )
 end
 
 @testset "calculate_p_value counts permutations below threshold" begin

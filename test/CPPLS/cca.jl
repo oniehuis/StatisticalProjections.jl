@@ -35,25 +35,44 @@ end
     Y = rand(5, 2)
     Y_combined = hcat(Y, rand(5, 1))
 
-    weights = StatisticalProjections.compute_cppls_weights(
-        X, Y_combined, Y, nothing, 0.5, 1e-4)
+    weights =
+        StatisticalProjections.compute_cppls_weights(X, Y_combined, Y, nothing, 0.5, 1e-4)
     @test length(weights) == 4
 
     weights_bounds = StatisticalProjections.compute_cppls_weights(
-        X, Y_combined, Y, nothing, (0.1, 0.9), 1e-4)
+        X,
+        Y_combined,
+        Y,
+        nothing,
+        (0.1, 0.9),
+        1e-4,
+    )
     @test length(weights_bounds) == 4
 
-    scalar_gamma = StatisticalProjections.compute_cppls_weights(
-        X, Y_combined, Y, nothing, 0.3, 1e-4)
+    scalar_gamma =
+        StatisticalProjections.compute_cppls_weights(X, Y_combined, Y, nothing, 0.3, 1e-4)
     tuple_gamma = StatisticalProjections.compute_cppls_weights(
-        X, Y_combined, Y, nothing, (0.3, 0.3), 1e-4)
+        X,
+        Y_combined,
+        Y,
+        nothing,
+        (0.3, 0.3),
+        1e-4,
+    )
     @test all(isapprox.(scalar_gamma[1], tuple_gamma[1]))
     @test scalar_gamma[2] ≈ tuple_gamma[2]
     @test all(isapprox.(scalar_gamma[3], tuple_gamma[3]))
     @test scalar_gamma[4] ≈ tuple_gamma[4]
 
-    loadings_one, corr_one, coeffs_one, gamma_one = StatisticalProjections.compute_cppls_weights(
-        X, Y_combined, Y, nothing, (1.0, 1.0), 1e-4)
+    loadings_one, corr_one, coeffs_one, gamma_one =
+        StatisticalProjections.compute_cppls_weights(
+            X,
+            Y_combined,
+            Y,
+            nothing,
+            (1.0, 1.0),
+            1e-4,
+        )
     @test gamma_one == 1.0
     @test all(isfinite.(loadings_one))
     @test all(isnan.(coeffs_one))
@@ -77,15 +96,19 @@ end
 
     signs = ones(size(correlations))
     general_weights = StatisticalProjections.compute_general_weights(
-        ones(size(σ)), abs.(correlations), 0.5, signs)
+        ones(size(σ)),
+        abs.(correlations),
+        0.5,
+        signs,
+    )
     @test size(general_weights) == size(correlations)
     @test all(isfinite.(general_weights))
 
     X_deflated = [
-        1.0  0.5
-        0.0  1.0
-        1.5  1.0
-        2.0  0.2
+        1.0 0.5
+        0.0 1.0
+        1.5 1.0
+        2.0 0.2
     ]
     Y_responses = [
         1 0
@@ -99,36 +122,82 @@ end
     X_std ./= maximum(X_std)
 
     val0 = StatisticalProjections.evaluate_canonical_correlation(
-        0.0, X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing)
+        0.0,
+        X_deflated,
+        X_std,
+        X_Y_corr,
+        corr_signs,
+        Y_responses,
+        nothing,
+    )
     val1 = StatisticalProjections.evaluate_canonical_correlation(
-        1.0, X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing)
+        1.0,
+        X_deflated,
+        X_std,
+        X_Y_corr,
+        corr_signs,
+        Y_responses,
+        nothing,
+    )
     @test val0 ≤ 0
     @test val1 ≤ 0
 
     γ_tuple, corr_tuple = StatisticalProjections.compute_best_gamma(
-        X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing,
-        (0.0, 1.0), 1e-4)
+        X_deflated,
+        X_std,
+        X_Y_corr,
+        corr_signs,
+        Y_responses,
+        nothing,
+        (0.0, 1.0),
+        1e-4,
+    )
     @test 0.0 ≤ γ_tuple ≤ 1.0
     @test 0.0 ≤ corr_tuple ≤ 1.0
 
-    gamma_choices = Union{Float64, NTuple{2, Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
+    gamma_choices = Union{Float64,NTuple{2,Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
     γ_vec, corr_vec = StatisticalProjections.compute_best_gamma(
-        X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing,
-        gamma_choices, 1e-4)
+        X_deflated,
+        X_std,
+        X_Y_corr,
+        corr_signs,
+        Y_responses,
+        nothing,
+        gamma_choices,
+        1e-4,
+    )
     @test 0.0 ≤ γ_vec ≤ 1.0
     @test 0.0 ≤ corr_vec ≤ 1.0
 
-    loadings_zero, corr_zero, coeffs_zero, γ_zero = StatisticalProjections.compute_best_loadings(
-        X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing,
-        (0.0, 0.0), 1e-4, size(Y_responses, 2))
+    loadings_zero, corr_zero, coeffs_zero, γ_zero =
+        StatisticalProjections.compute_best_loadings(
+            X_deflated,
+            X_std,
+            X_Y_corr,
+            corr_signs,
+            Y_responses,
+            nothing,
+            (0.0, 0.0),
+            1e-4,
+            size(Y_responses, 2),
+        )
     @test γ_zero == 0.0
     @test all(isnan, coeffs_zero)
     @test size(loadings_zero) == (size(X_deflated, 2),)
     @test 0.0 ≤ corr_zero ≤ 1.0
 
-    loadings_general, corr_general, coeffs_general, γ_general = StatisticalProjections.compute_best_loadings(
-        X_deflated, X_std, X_Y_corr, corr_signs, Y_responses, nothing,
-        (0.2, 0.8), 1e-4, size(Y_responses, 2))
+    loadings_general, corr_general, coeffs_general, γ_general =
+        StatisticalProjections.compute_best_loadings(
+            X_deflated,
+            X_std,
+            X_Y_corr,
+            corr_signs,
+            Y_responses,
+            nothing,
+            (0.2, 0.8),
+            1e-4,
+            size(Y_responses, 2),
+        )
     @test 0.2 ≤ γ_general ≤ 0.8
     @test all(isfinite.(coeffs_general))
     @test length(loadings_general) == size(X_deflated, 2)

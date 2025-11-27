@@ -1,17 +1,22 @@
 @testset "fisherztrack aggregates correlations per axis₁" begin
-    X = reshape(Float64[
-        1 2  3 4
-        2 3  4 5
-        3 4  5 6
-        4 5  6 7
-    ], 4, 2, 2)
+    X = reshape(
+        Float64[
+            1 2 3 4
+            2 3 4 5
+            3 4 5 6
+            4 5 6 7
+        ],
+        4,
+        2,
+        2,
+    )
     scores = [1.0, 2.0, 3.0, 4.0]
 
     manual = zeros(2)
-    for axis1 in 1:2
+    for axis1 = 1:2
         rs = Float64[]
         ws = Float64[]
-        for axis2 in 1:2
+        for axis2 = 1:2
             push!(rs, StatisticalProjections.robustcor(view(X, :, axis1, axis2), scores))
             push!(ws, StatisticalProjections.mean(view(X, :, axis1, axis2)))
         end
@@ -19,7 +24,7 @@
         manual[axis1] = tanh(sum(ws .* zs) / (sum(ws) + eps(Float64)))
     end
 
-    result = StatisticalProjections.fisherztrack(X, scores; weights=:mean)
+    result = StatisticalProjections.fisherztrack(X, scores; weights = :mean)
     @test result ≈ manual
 end
 
@@ -46,33 +51,45 @@ end
     @test direction[1] == 1.0 || direction[1] == -1.0
     @test minimum(scores[Y[:, 1] .== 1]) > maximum(scores[Y[:, 2] .== 1])
     flipped_dir, flipped_scores = StatisticalProjections.separationaxis(
-        reshape(X_single, :, 1), Y; positive_class=2)
+        reshape(X_single, :, 1),
+        Y;
+        positive_class = 2,
+    )
     @test flipped_dir == -direction
     @test flipped_scores == -scores
 
     X_multi = [
-        3.0   1.0
-        -2.0  0.0
-        1.0   3.0
+        3.0 1.0
+        -2.0 0.0
+        1.0 3.0
         -1.0 -2.0
     ]
-    dir_centroid, scores_centroid = StatisticalProjections.separationaxis(X_multi, Y; method=:centroid)
-    dir_lda, scores_lda = StatisticalProjections.separationaxis(X_multi, Y; method=:lda)
+    dir_centroid, scores_centroid =
+        StatisticalProjections.separationaxis(X_multi, Y; method = :centroid)
+    dir_lda, scores_lda = StatisticalProjections.separationaxis(X_multi, Y; method = :lda)
     @test size(dir_centroid) == (2,)
     @test size(dir_lda) == (2,)
     @test minimum(scores_centroid[Y[:, 1] .== 1]) > maximum(scores_centroid[Y[:, 2] .== 1])
     @test minimum(scores_lda[Y[:, 1] .== 1]) > maximum(scores_lda[Y[:, 2] .== 1])
     @test dir_centroid' * dir_lda ≈ abs(dir_centroid' * dir_lda)
     dir_centroid_neg, scores_centroid_neg = StatisticalProjections.separationaxis(
-        X_multi, Y; method=:centroid, positive_class=2)
+        X_multi,
+        Y;
+        method = :centroid,
+        positive_class = 2,
+    )
     @test dir_centroid_neg ≈ -dir_centroid
     @test scores_centroid_neg ≈ -scores_centroid
 
     X_equal_means = [
-        1.0  2.0
-        1.0  2.0
-        1.0  2.0
-        1.0  2.0
+        1.0 2.0
+        1.0 2.0
+        1.0 2.0
+        1.0 2.0
     ]
-    @test_throws ArgumentError StatisticalProjections.separationaxis(X_equal_means, Y; method=:centroid)
+    @test_throws ArgumentError StatisticalProjections.separationaxis(
+        X_equal_means,
+        Y;
+        method = :centroid,
+    )
 end

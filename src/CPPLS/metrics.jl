@@ -30,9 +30,10 @@ true
 function nmc(
     Y_true_one_hot::AbstractMatrix{<:Integer},
     Y_pred_one_hot::AbstractMatrix{<:Integer},
-    weighted::Bool)
+    weighted::Bool,
+)
 
-    size(Y_true_one_hot) == size(Y_pred_one_hot) || 
+    size(Y_true_one_hot) == size(Y_pred_one_hot) ||
         throw(DimensionMismatch("Input matrices must have the same dimensions"))
 
     n_samples = size(Y_true_one_hot, 1)
@@ -75,9 +76,12 @@ true
 ```
 """
 function calculate_p_value(
-    permutation_accuracies::AbstractVector{<:Real}, 
-    model_accuracy::Float64)
+    permutation_accuracies::AbstractVector{<:Real},
+    model_accuracy::Float64,
+)
 
-    (count(x -> x ≤ model_accuracy || x ≈ model_accuracy, permutation_accuracies) 
-        / (length(permutation_accuracies) + 1))
+    (
+        count(x -> x ≤ model_accuracy || x ≈ model_accuracy, permutation_accuracies) /
+        (length(permutation_accuracies) + 1)
+    )
 end

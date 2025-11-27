@@ -9,7 +9,12 @@ end
     regression_coefficients[:, :, 2] = [0.5 -0.2; 0.3 0.1]
     X_means = reshape([1.0, 2.0], 1, :)
     Y_means = reshape([0.25, -0.5], 1, :)
-    cppls = StatisticalProjections.CPPLSLight(regression_coefficients, X_means, Y_means)
+    cppls = StatisticalProjections.CPPLSLight(
+        regression_coefficients,
+        X_means,
+        Y_means,
+        :regression,
+    )
 
     X = [
         1.0 2.0
@@ -19,7 +24,7 @@ end
     centered = X .- X_means
 
     expected = Array{Float64}(undef, size(X, 1), size(Y_means, 2), 2)
-    for i in 1:2
+    for i = 1:2
         expected[:, :, i] = centered * regression_coefficients[:, :, i] .+ Y_means
     end
 
@@ -36,21 +41,26 @@ end
     regression_coefficients = ones(Float64, 1, 2, 1)
     X_means = reshape([0.0], 1, 1)
     Y_means = reshape([0.1, -0.2], 1, :)
-    cppls = StatisticalProjections.CPPLSLight(regression_coefficients, X_means, Y_means)
+    cppls = StatisticalProjections.CPPLSLight(
+        regression_coefficients,
+        X_means,
+        Y_means,
+        :regression,
+    )
 
     predictions = zeros(Float64, 3, 2, 2)
     predictions[:, :, 1] = [
-        0.9  0.2
-        0.1  0.8
-        0.4  0.6
+        0.9 0.2
+        0.1 0.8
+        0.4 0.6
     ]
     predictions[:, :, 2] = [
-        0.5  0.4
-        0.2  0.7
-        0.7  0.3
+        0.5 0.4
+        0.2 0.7
+        0.7 0.3
     ]
 
-    summed = sum(predictions, dims=3)[:, :, 1]
+    summed = sum(predictions, dims = 3)[:, :, 1]
     adjusted = summed .- (size(predictions, 3) - 1) .* cppls.Y_means
     expected_labels = map(argmax, eachrow(adjusted))
 
@@ -66,14 +76,14 @@ end
 @testset "project centers inputs before applying projection" begin
     X_means = reshape([0.5, -1.0], 1, :)
     projection = [
-        1.0  0.0
-        0.5  2.0
+        1.0 0.0
+        0.5 2.0
     ]
     dummy = DummyProjectionModel(projection, X_means)
     X = [
-        0.5  -1.0
-        1.0   0.0
-        2.0   1.0
+        0.5 -1.0
+        1.0 0.0
+        2.0 1.0
     ]
 
     centered = X .- X_means

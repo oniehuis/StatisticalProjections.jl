@@ -24,7 +24,7 @@ julia> coeffs = reshape(Float64[0.5, 1.0], 2, 1, 1);  # two predictors, one targ
 
 julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0], 1, 1);
 
-julia> model = CPPLSLight(coeffs, X_mean, Y_mean);
+julia> model = CPPLSLight(coeffs, X_mean, Y_mean, :regression);
 
 julia> Xnew = [1.0 2.0; 3.0 4.0];
 
@@ -35,21 +35,23 @@ true
 function predict(
     cppls::AbstractCPPLS,
     X::AbstractMatrix{<:Real},
-    n_components::T=size(cppls.regression_coefficients, 3)) where T<:Integer
+    n_components::T = size(cppls.regression_coefficients, 3),
+) where {T<:Integer}
 
     n_samples_X = size(X, 1)
     n_targets_Y = size(cppls.Y_means, 2)
 
     if n_components > size(cppls.regression_coefficients, 3)
-        throw(DimensionMismatch(
-            "n_components exceeds the number of components in the model"))
+        throw(
+            DimensionMismatch("n_components exceeds the number of components in the model"),
+        )
     end
 
     X_centered = X .- cppls.X_means
     fitted_values = similar(X, n_samples_X, n_targets_Y, n_components)
 
-    for i in 1:n_components
-        @views fitted_values[:, :, i] .= 
+    for i = 1:n_components
+        @views fitted_values[:, :, i] .=
             (X_centered * cppls.regression_coefficients[:, :, i] .+ cppls.Y_means)
     end
 
@@ -86,7 +88,7 @@ julia> coeffs = reshape(Float64[1, -1, 0.5, -0.5], 2, 2, 1);  # two predictors, 
 
 julia> X_mean = zeros(1, 2); Y_mean = reshape([0.0 0.0], 1, 2);
 
-julia> model = CPPLSLight(coeffs, X_mean, Y_mean);
+julia> model = CPPLSLight(coeffs, X_mean, Y_mean, :regression);
 
 julia> Xnew = [2.0 1.0; 0.5 3.0];
 
@@ -99,11 +101,11 @@ julia> predictonehot(model, raw) ≈ [1 0; 0 1]
 true
 ```
 """
-function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real, 3})
+function predictonehot(cppls::AbstractCPPLS, predictions::AbstractArray{<:Real,3})
     n_components = size(predictions, 3)
     n_classes = size(predictions, 2)
 
-    Y_pred_sum = sum(predictions, dims=3)[:, :, 1]
+    Y_pred_sum = sum(predictions, dims = 3)[:, :, 1]
     Y_pred_final = Y_pred_sum .- (n_components - 1) .* cppls.Y_means
 
     predicted_class_indices = argmax.(eachrow(Y_pred_final))
