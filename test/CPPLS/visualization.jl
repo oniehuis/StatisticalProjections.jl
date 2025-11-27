@@ -37,6 +37,7 @@ end
     @test MakieExt.matches_sample_length((:a, :b), 2)
     @test !MakieExt.matches_sample_length((:a, :b), 3)
     @test !MakieExt.matches_sample_length(:foo, 2)
+    @test !MakieExt.matches_sample_length(:foo, :bar)
 end
 
 @testset "normalize_palette" begin
@@ -53,6 +54,9 @@ end
 
     bad_single = MakieExt.normalize_palette(("notacolor",), 1)
     @test bad_single == Makie.wong_colors(1)
+
+    bad_default = MakieExt.normalize_palette("not-a-color", 1)
+    @test bad_default == Makie.wong_colors(1)
 
     bad_entry = MakieExt.normalize_palette((:red, :invalid), 2)
     @test bad_entry == Makie.wong_colors(2)
@@ -75,6 +79,7 @@ end
         ("notacolor", :green, :blue),
         labels,
     )
+    @test_throws ArgumentError MakieExt.manual_color_sequence("not-a-color", labels)
 end
 
 @testset "resolve_label_colors" begin
@@ -175,10 +180,7 @@ end
     reg_model = dummy_cppls(analysis = :regression)
     @test StatisticalProjections.scoreplot(reg_model) isa Makie.FigureAxisPlot
 
-    @test_throws ResolveException StatisticalProjections.scoreplot(
-        da_model;
-        dims = (1, 3),
-    )
+    @test_throws ResolveException StatisticalProjections.scoreplot(da_model; dims = (1, 3))
     @test_throws ResolveException StatisticalProjections.scoreplot(
         da_model;
         color = (:red,),
