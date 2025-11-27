@@ -173,6 +173,32 @@ end
     @test vec_model.analysis_mode === :regression
 end
 
+@testset "fit_cppls categorical dispatch method" begin
+    X = Float64[
+        1 0
+        0 1
+        2 1
+    ]
+    cat_labels = categorical(["g1", "g2", "g1"])
+    plain_labels = ["g1", "g2", "g1"]
+
+    cat_method = which(
+        StatisticalProjections.fit_cppls,
+        Tuple{typeof(X), typeof(cat_labels), Int},
+    )
+
+    cat_sig = Base.unwrap_unionall(cat_method.sig)
+    @test cat_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
+
+    cat_model = StatisticalProjections.fit_cppls(X, cat_labels, 2; gamma = 0.5)
+    plain_model = StatisticalProjections.fit_cppls(X, plain_labels, 2; gamma = 0.5)
+
+    @test cat_model.analysis_mode === :discriminant
+    @test cat_model.regression_coefficients ≈ plain_model.regression_coefficients
+    @test cat_model.X_means ≈ plain_model.X_means
+    @test cat_model.Y_means ≈ plain_model.Y_means
+end
+
 @testset "fit_cppls_light wrappers enforce analysis mode" begin
     X = Float64[
         1 0
@@ -229,6 +255,32 @@ end
         StatisticalProjections.fit_cppls_light(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
 
     @test light_vec.regression_coefficients ≈ light_vec_manual.regression_coefficients
+end
+
+@testset "fit_cppls_light categorical dispatch method" begin
+    X = Float64[
+        1 0
+        0 1
+        1 2
+        2 3
+    ]
+    cat_labels = categorical(["alpha", "beta", "alpha", "beta"])
+    plain_labels = ["alpha", "beta", "alpha", "beta"]
+
+    light_method = which(
+        StatisticalProjections.fit_cppls_light,
+        Tuple{typeof(X), typeof(cat_labels), Int},
+    )
+    light_sig = Base.unwrap_unionall(light_method.sig)
+    @test light_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
+
+    cat_light = StatisticalProjections.fit_cppls_light(X, cat_labels, 2; gamma = 0.5)
+    plain_light = StatisticalProjections.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
+
+    @test cat_light.analysis_mode === :discriminant
+    @test cat_light.regression_coefficients ≈ plain_light.regression_coefficients
+    @test cat_light.X_means ≈ plain_light.X_means
+    @test cat_light.Y_means ≈ plain_light.Y_means
 end
 
 @testset "process_component! normalizes weights and deflates predictors" begin

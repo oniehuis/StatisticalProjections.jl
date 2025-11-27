@@ -249,7 +249,7 @@ end
 
 function optimize_num_latent_variables(
     X_train_full::AbstractMatrix{<:Real},
-    labels::AbstractVector{<:AbstractCategoricalArray{<:Any}},
+    labels::AbstractCategoricalArray{T,1,R,V,C,U},
     max_components::Integer,
     num_inner_folds::Integer,
     num_inner_folds_repeats::Integer,
@@ -268,7 +268,7 @@ function optimize_num_latent_variables(
     weighted_nmc::Bool,
     rng::AbstractRNG,
     verbose::Bool,
-)
+) where {T,R,V,C,U}
     Y_train_full, _ = labels_to_one_hot(labels)
     optimize_num_latent_variables(
         X_train_full,
@@ -336,32 +336,6 @@ function optimize_num_latent_variables(
         )
     end
 end
-
-function optimize_num_latent_variables(
-    X_train_full::AbstractMatrix{<:Real},
-    Y_train_full::AbstractVector{<:Real},
-    max_components::Integer,
-    num_inner_folds::Integer,
-    num_inner_folds_repeats::Integer,
-    gamma::Union{
-        <:Real,
-        <:NTuple{2,<:Real},
-        <:AbstractVector{<:Union{<:Real,<:NTuple{2,<:Real}}},
-    },
-    observation_weights::Union{AbstractVector{<:Real},Nothing},
-    Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
-    center::Bool,
-    X_tolerance::Real,
-    X_loading_weight_tolerance::Real,
-    t_squared_norm_tolerance::Real,
-    gamma_optimization_tolerance::Real,
-    weighted_nmc::Bool,
-    rng::AbstractRNG,
-    verbose::Bool,
-)
-    cv_regression_error("optimize_num_latent_variables")
-end
-
 
 """
     nested_cv(X_predictors::AbstractMatrix{<:Real}, Y_responses::AbstractMatrix{<:Integer};
@@ -558,9 +532,9 @@ end
 
 function nested_cv(
     X_predictors::AbstractMatrix{<:Real},
-    labels::AbstractVector{<:AbstractCategoricalArray{<:Any}};
+    labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
-)
+) where {T,R,V,C,U}
     Y_responses, _ = labels_to_one_hot(labels)
     nested_cv(X_predictors, Y_responses; kwargs...)
 end
@@ -572,14 +546,6 @@ function nested_cv(X_predictors::AbstractMatrix{<:Real}, labels::AbstractVector;
         Y_responses, _ = labels_to_one_hot(labels)
         nested_cv(X_predictors, Y_responses; kwargs...)
     end
-end
-
-function nested_cv(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractVector{<:Real};
-    kwargs...,
-)
-    cv_regression_error("nested_cv")
 end
 
 """
@@ -745,9 +711,9 @@ end
 
 function nested_cv_permutation(
     X_predictors::AbstractMatrix{<:Real},
-    labels::AbstractVector{<:AbstractCategoricalArray{<:Any}};
+    labels::AbstractCategoricalArray{T,1,R,V,C,U};
     kwargs...,
-)
+) where {T,R,V,C,U}
     Y_responses, _ = labels_to_one_hot(labels)
     nested_cv_permutation(X_predictors, Y_responses; kwargs...)
 end
@@ -763,12 +729,4 @@ function nested_cv_permutation(
         Y_responses, _ = labels_to_one_hot(labels)
         nested_cv_permutation(X_predictors, Y_responses; kwargs...)
     end
-end
-
-function nested_cv_permutation(
-    X_predictors::AbstractMatrix{<:Real},
-    Y_responses::AbstractVector{<:Real};
-    kwargs...,
-)
-    cv_regression_error("nested_cv_permutation")
 end

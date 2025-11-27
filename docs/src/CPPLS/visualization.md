@@ -1,4 +1,4 @@
-## Visualization
+# Visualization
 
 ```@docs
 StatisticalProjections.scoreplot

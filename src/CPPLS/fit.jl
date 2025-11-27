@@ -284,7 +284,7 @@ function fit_cppls(
 end
 
 """
-    fit_cppls(X, labels::AbstractVector{<:AbstractCategoricalArray{<:Any}}, n_components=2; kwargs...)
+    fit_cppls(X, labels::AbstractCategoricalArray, n_components=2; kwargs...)
     fit_cppls(X, labels::AbstractVector, n_components=2; kwargs...)
 
 Discriminant-analysis variants of [`fit_cppls`](@ref). The first method dispatches
@@ -317,10 +317,10 @@ true
 """
 function fit_cppls(
     X_predictors::AbstractMatrix{<:Real},
-    labels::AbstractVector{<:AbstractCategoricalArray{<:Any}},
+    labels::AbstractCategoricalArray{T,1,R,V,C,U},
     n_components::Integer = 2;
     kwargs...,
-)
+) where {T,R,V,C,U}
     fit_cppls_from_labels(X_predictors, labels, n_components; kwargs...)
 end
 
@@ -557,7 +557,7 @@ function fit_cppls_light(
 end
 
 """
-    fit_cppls_light(X, labels::AbstractVector{<:AbstractCategoricalArray{<:Any}}, n_components=2; kwargs...)
+    fit_cppls_light(X, labels::AbstractCategoricalArray, n_components=2; kwargs...)
     fit_cppls_light(X, labels::AbstractVector, n_components=2; kwargs...)
 
 Discriminant-analysis convenience wrappers for [`fit_cppls_light`](@ref). The first
@@ -589,10 +589,10 @@ true
 """
 function fit_cppls_light(
     X_predictors::AbstractMatrix{<:Real},
-    labels::AbstractVector{<:AbstractCategoricalArray{<:Any}},
+    labels::AbstractCategoricalArray{T,1,R,V,C,U},
     n_components::Integer = 2;
     kwargs...,
-)
+) where {T,R,V,C,U}
     fit_cppls_light_from_labels(X_predictors, labels, n_components; kwargs...)
 end
 
