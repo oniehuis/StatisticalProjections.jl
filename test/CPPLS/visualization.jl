@@ -36,6 +36,7 @@ end
     @test !MakieExt.matches_sample_length([1, 2], 3)
     @test MakieExt.matches_sample_length((:a, :b), 2)
     @test !MakieExt.matches_sample_length((:a, :b), 3)
+    @test !MakieExt.matches_sample_length(:foo, 2)
 end
 
 @testset "normalize_palette" begin
@@ -49,6 +50,16 @@ end
     single = MakieExt.normalize_palette(:green, 1)
     @test length(single) == 1
     @test single[1] ≈ Makie.to_color(:green)
+
+    bad_single = MakieExt.normalize_palette(("notacolor",), 1)
+    @test bad_single == Makie.wong_colors(1)
+
+    bad_entry = MakieExt.normalize_palette((:red, :invalid), 2)
+    @test bad_entry == Makie.wong_colors(2)
+
+    @test MakieExt.normalize_palette(nothing, 3) == Makie.wong_colors(3)
+    auto_entries = MakieExt.normalize_palette(Makie.automatic, 2)
+    @test auto_entries == Makie.wong_colors(2)
 end
 
 @testset "manual_color_sequence" begin
@@ -96,6 +107,7 @@ end
     dict_colors = Dict(:a => Makie.to_color(:black))
     dict_adjusted = MakieExt.apply_alpha_to_colors(dict_colors, 0.3)
     @test dict_adjusted[:a].alpha ≈ 0.3
+    @test MakieExt.with_alpha(nothing, 0.5) === nothing
 end
 
 @testset "cppls_category_labels" begin
@@ -157,14 +169,17 @@ end
     @test Makie.to_value(ax.xlabel) == "X"
     @test Makie.to_value(ax.ylabel) == "Y"
 
+    plot_auto = StatisticalProjections.scoreplot!(da_model; color = :green)
+    @test plot_auto isa Makie.Plot
+
     reg_model = dummy_cppls(analysis = :regression)
     @test StatisticalProjections.scoreplot(reg_model) isa Makie.FigureAxisPlot
 
-    @test_throws ComputePipeline.ResolveException StatisticalProjections.scoreplot(
+    @test_throws ResolveException StatisticalProjections.scoreplot(
         da_model;
         dims = (1, 3),
     )
-    @test_throws ComputePipeline.ResolveException StatisticalProjections.scoreplot(
+    @test_throws ResolveException StatisticalProjections.scoreplot(
         da_model;
         color = (:red,),
     )
