@@ -1,4 +1,4 @@
-import StatisticalProjections: CPPLS, scoreplot, scoreplot!
+import StatisticalProjections: CPPLS, scoreplot, scoreplot!, matches_sample_length
 
 const SCOREPLOT_AXIS_DEFAULTS = (xlabel = "Compound 1", ylabel = "Compound 2")
 const SCOREPLOT_AUTO_LABEL = gensym(:scoreplot_auto_label)
@@ -53,10 +53,6 @@ function normalize_palette(default_color, n_unique)
         end
     end
 end
-
-matches_sample_length(value::AbstractVector, n) = length(value) == n
-matches_sample_length(value::Tuple, n) = length(value) == n
-matches_sample_length(::Any, ::Any) = false
 
 function order_preserving_unique(labels)
     seen = Dict{Any,Bool}()

@@ -41,6 +41,10 @@ export one_hot_to_labels
 export find_invariant_and_variant_columns
 export decision_line
 
+matches_sample_length(value::AbstractVector, n) = length(value) == n
+matches_sample_length(value::Tuple, n) = length(value) == n
+matches_sample_length(::Any, ::Any) = false
+
 # Makie extension hooks (actual methods live in the Makie optional dependency)
 const SCOREPLOT_DOC = """
     scoreplot(cppls; kwargs...) -> Makie.FigureAxisPlot / Plot

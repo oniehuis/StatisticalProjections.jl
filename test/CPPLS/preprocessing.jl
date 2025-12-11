@@ -64,6 +64,8 @@ end
 
     float_vector = rand(4)
     @test StatisticalProjections.convert_auxiliary_to_float64(float_vector) === float_vector
+
+    @test_throws MethodError StatisticalProjections.convert_auxiliary_to_float64(1.0)
 end
 
 @testset "cppls_prepare_data validates shapes and returns deflated matrices" begin
