@@ -39,6 +39,7 @@ end
     @test !MakieExt.matches_sample_length(:foo, 2)
     @test !MakieExt.matches_sample_length(:foo, :bar)
     @test invoke(MakieExt.matches_sample_length, Tuple{Any,Any}, :foo, 2) == false
+    @test StatisticalProjections.matches_sample_length(:foo, :bar) == false
 end
 
 @testset "normalize_palette" begin

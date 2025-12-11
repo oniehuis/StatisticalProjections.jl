@@ -26,11 +26,13 @@ convert_to_float64(v::AbstractVector{T}) where {T<:Real} =
 function convert_auxiliary_to_float64(Y::LinearAlgebra.AbstractVecOrMat)
     if Y isa AbstractMatrix
         return Y isa Matrix{Float64} ? Y : Matrix{Float64}(Y)
-    elseif Y isa AbstractVector
-        return Y isa Vector{Float64} ? Y : Vector{Float64}(Y)
     else
-        throw(ArgumentError("Y_auxiliary must be a vector or matrix"))
+        return Y isa Vector{Float64} ? Y : Vector{Float64}(Y)
     end
+end
+
+function convert_auxiliary_to_float64(Y)
+    throw(ArgumentError("Y_auxiliary must be a vector or matrix"))
 end
 
 function cppls_prepare_data(
