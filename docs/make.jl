@@ -26,6 +26,7 @@ makedocs(
     pages = [
         "Home" => "index.md",
         "CPPLS" => Any[
+            "CPPLS/theory.md",
             "CPPLS/types.md",
             "CPPLS/fit.md",
             "CPPLS/predict.md",
