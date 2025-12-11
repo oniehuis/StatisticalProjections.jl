@@ -38,6 +38,34 @@ end
     @test converted == float.(int_input)
 end
 
+@testset "convert_to_float64 handles vectors" begin
+    float_vec = rand(5)
+    @test StatisticalProjections.convert_to_float64(float_vec) === float_vec
+
+    int_vec = [1, 2, 3]
+    converted_vec = StatisticalProjections.convert_to_float64(int_vec)
+    @test converted_vec isa Vector{Float64}
+    @test converted_vec == float.(int_vec)
+end
+
+@testset "convert_auxiliary_to_float64 converts matrices and vectors" begin
+    aux_matrix = [1 2; 3 4]
+    converted_matrix = StatisticalProjections.convert_auxiliary_to_float64(aux_matrix)
+    @test converted_matrix isa Matrix{Float64}
+    @test converted_matrix == float.(aux_matrix)
+
+    aux_vector = [1, 3, 5]
+    converted_vector = StatisticalProjections.convert_auxiliary_to_float64(aux_vector)
+    @test converted_vector isa Vector{Float64}
+    @test converted_vector == float.(aux_vector)
+
+    float_matrix = rand(2, 2)
+    @test StatisticalProjections.convert_auxiliary_to_float64(float_matrix) === float_matrix
+
+    float_vector = rand(4)
+    @test StatisticalProjections.convert_auxiliary_to_float64(float_vector) === float_vector
+end
+
 @testset "cppls_prepare_data validates shapes and returns deflated matrices" begin
     X = Float32[1 2; 3 4; 5 6; 7 8]
     Y = Float32[1 0; 0 1; 1 0; 0 1]
