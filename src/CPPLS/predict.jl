@@ -151,3 +151,75 @@ contains the appropriate projection matrix and predictor means.
 """
 project(cppls::AbstractCPPLS, X::AbstractMatrix{<:Real}) =
     (X .- cppls.X_means) * cppls.projection
+
+"""
+    decision_line(cppls::CPPLS; dims=(1, 2), n_components=maximum(dims))
+
+Return the discriminant hyperplane restricted to the selected score dimensions as a
+tuple `(xs, ys, intercept, normal)`. Use `xs`/`ys` to draw the line directly on a score
+plot; `intercept` and `normal` describe the underlying equation `normal⋅scores + intercept = 0`.
+
+# Keywords
+- `dims`: Two component indices that define the score plane. Defaults to the first two
+  components shown in typical score plots.
+- `n_components`: Number of latent components used in the classifier. By default matches
+  the largest index in `dims`, ensuring the decision line reflects the same submodel
+  whose scores are plotted.
+
+# Notes
+- Works for discriminant CPPLS fits with exactly two response classes. The prediction step
+  is linear in the latent scores, so fitting `normal⋅scores + intercept = (Ŷ₁ - Ŷ₂)` via
+  least squares recovers the separating line in the requested score plane.
+- The returned `(xs, ys)` span the range of the training scores along `dims`. Offset a small
+  margin so the boundary extends slightly beyond the cloud of points.
+"""
+function decision_line(
+    cppls::CPPLS;
+    dims::NTuple{2,Int} = (1, 2),
+    n_components::Integer = maximum(dims),
+)
+    cppls.analysis_mode === :discriminant ||
+        throw(ArgumentError("decision_line is only defined for discriminant CPPLS models"))
+    size(cppls.regression_coefficients, 2) == 2 ||
+        throw(ArgumentError("decision_line currently supports exactly two classes"))
+
+    n_components ≥ maximum(dims) ||
+        throw(ArgumentError("n_components must be at least as large as the requested dims"))
+    n_components ≤ size(cppls.regression_coefficients, 3) ||
+        throw(ArgumentError("n_components exceeds the fitted CPPLS model"))
+    all(d -> 1 ≤ d ≤ size(cppls.X_scores, 2), dims) ||
+        throw(ArgumentError("dims must refer to stored score columns"))
+
+    scores = cppls.X_scores[:, collect(dims)]
+    predictions = cppls.fitted_values[:, :, n_components]
+    class_diff = predictions[:, 1] .- predictions[:, 2]
+
+    A = hcat(ones(size(scores, 1)), scores)
+    β = A \ class_diff
+    intercept = β[1]
+    normal = β[2:3]
+
+    function padded_range(values)
+        lo, hi = extrema(values)
+        Δ = hi - lo
+        pad = Δ ≈ 0 ? 1.0 : 0.05 * Δ
+        lo - pad, hi + pad
+    end
+
+    x_lo, x_hi = padded_range(scores[:, 1])
+    y_lo, y_hi = padded_range(scores[:, 2])
+    xs = Float64[x_lo, x_hi]
+
+    ys = if isapprox(normal[2], 0.0; atol = eps(Float64))
+        fill(-intercept / normal[1], 2)
+    else
+        (-intercept .- normal[1] .* xs) ./ normal[2]
+    end
+
+    if isapprox(normal[2], 0.0; atol = eps(Float64))
+        ys = Float64[y_lo, y_hi]
+        xs .= -intercept / normal[1]
+    end
+
+    (xs = xs, ys = ys, intercept = intercept, normal = normal)
+end

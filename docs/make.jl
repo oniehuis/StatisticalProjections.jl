@@ -20,7 +20,7 @@ DocMeta.setdocmeta!(
 
 makedocs(
     sitename = "StatisticalProjections",
-    format = Documenter.HTML(),
+    format = Documenter.HTML(mathengine = Documenter.MathJax()),
     modules = [StatisticalProjections],
     authors = "Oliver Niehuis",
     pages = [

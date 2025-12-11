@@ -39,6 +39,7 @@ export fisherztrack
 export labels_to_one_hot
 export one_hot_to_labels
 export find_invariant_and_variant_columns
+export decision_line
 
 # Makie extension hooks (actual methods live in the Makie optional dependency)
 const SCOREPLOT_DOC = """

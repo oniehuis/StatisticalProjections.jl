@@ -27,7 +27,7 @@ end
         n_components::Integer;
         gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-        Y_auxiliary::Union{AbstractMatrix{<:Real}, Nothing}=nothing,
+        Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64), 
@@ -54,7 +54,7 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
   `0.5`, i.e. no optimization.
 - `observation_weights`: A vector of individual weights for the observations (e.g., 
   experimental data or samples). Defaults to `nothing`.
-- `Y_auxiliary`: A matrix of auxiliary response variables containing additional information 
+- `Y_auxiliary`: A matrix (or vector) of auxiliary response variables containing additional information 
   about the observations. Defaults to `nothing`.
 - `center`: Whether to mean-center the `X` and `Y` matrices. Defaults to `true`.
 - `X_tolerance`: Tolerance for small norms in `X`. Columns of `X` with norms below this 
@@ -143,7 +143,7 @@ function fit_cppls(
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
@@ -154,7 +154,7 @@ function fit_cppls(
     response_labels::AbstractVector = String[],
     analysis_mode::Symbol = :regression,
     da_categories = nothing,
-) where {T1<:Real,T2<:Real,T3<:Real}
+) where {T1<:Real,T2<:Real}
 
     analysis_mode in (:regression, :discriminant) || throw(
         ArgumentError(
@@ -339,7 +339,7 @@ function fit_cppls_from_labels(
     n_components::Integer;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
@@ -348,7 +348,7 @@ function fit_cppls_from_labels(
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
-) where {T1<:Real,T2<:Real,T3<:Real}
+) where {T1<:Real,T2<:Real}
     isempty(response_labels) || throw(
         ArgumentError(
             "`response_labels` cannot be provided when passing categorical responses; class names are inferred automatically.",
@@ -403,7 +403,7 @@ function fit_cppls(
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
@@ -412,7 +412,7 @@ function fit_cppls(
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
-) where {T1<:Real,T2<:Real,T3<:Real}
+) where {T1<:Real,T2<:Real}
 
     Y_matrix = reshape(Y_responses, :, 1)
 
@@ -442,7 +442,7 @@ end
         n_components::Integer;
         gamma::Union{<:Real, <:NTuple{2, <:Real}, <:AbstractVector{<:Union{<:Real, <:NTuple{2, <:Real}}}}=0.5,
         observation_weights::Union{AbstractVector{<:Real}, Nothing}=nothing,
-        Y_auxiliary::Union{AbstractMatrix{<:Real}, Nothing}=nothing,
+        Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat, Nothing}=nothing,
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64),
@@ -487,14 +487,14 @@ function fit_cppls_light(
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
     gamma_optimization_tolerance::Real = 1e-4,
     t_squared_norm_tolerance::Real = 1e-10,
     analysis_mode::Symbol = :regression,
-) where {T1<:Real,T2<:Real,T3<:Real}
+) where {T1<:Real,T2<:Real}
 
     (
         X_predictors,
@@ -611,13 +611,13 @@ function fit_cppls_light_from_labels(
     n_components::Integer;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
     gamma_optimization_tolerance::Real = 1e-4,
     t_squared_norm_tolerance::Real = 1e-10,
-) where {T1<:Real,T2<:Real,T3<:Real}
+) where {T1<:Real,T2<:Real}
     Y_responses, _ = labels_to_one_hot(labels)
 
     fit_cppls_light(
@@ -661,13 +661,13 @@ function fit_cppls_light(
     n_components::Integer = 2;
     gamma::Union{<:T1,<:NTuple{2,T1},<:AbstractVector{<:Union{<:T1,<:NTuple{2,T1}}}} = 0.5,
     observation_weights::Union{AbstractVector{T2},Nothing} = nothing,
-    Y_auxiliary::Union{AbstractMatrix{T3},Nothing} = nothing,
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing} = nothing,
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
     gamma_optimization_tolerance::Real = 1e-4,
     t_squared_norm_tolerance::Real = 1e-10,
-) where {T1<:Real,T2<:Real,T3<:Real}
+) where {T1<:Real,T2<:Real}
 
     Y_matrix = reshape(Y_responses, :, 1)
 

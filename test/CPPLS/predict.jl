@@ -1,6 +1,66 @@
+using LinearAlgebra: I
+
 struct DummyProjectionModel <: StatisticalProjections.AbstractCPPLS
     projection::Matrix{Float64}
     X_means::Matrix{Float64}
+end
+
+function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Float64})
+    n_samples, n_components = size(scores)
+    n_predictors = n_components
+    n_responses = 2
+
+    regression_coefficients = zeros(Float64, n_predictors, n_responses, n_components)
+    X_loadings = zeros(Float64, n_predictors, n_components)
+    X_loading_weights = similar(X_loadings)
+    Y_scores = zeros(Float64, n_samples, n_components)
+    Y_loadings = zeros(Float64, n_responses, n_components)
+    projection = Matrix{Float64}(I, n_predictors, n_components)
+    X_means = zeros(Float64, 1, n_predictors)
+    Y_means = zeros(Float64, 1, n_responses)
+
+    fitted_values = zeros(Float64, n_samples, n_responses, n_components)
+    for j = 1:n_components
+        fitted_values[:, 1, j] .= class_diff
+        fitted_values[:, 2, j] .= 0.0
+    end
+
+    residuals = similar(fitted_values)
+    X_variance = ones(Float64, n_components)
+    X_total_variance = 1.0
+    gammas = fill(0.5, n_components)
+    canonical_correlations = fill(0.9, n_components)
+    small_norm_indices = zeros(Int, n_components, n_predictors)
+    canonical_coefficients = zeros(Float64, n_responses, n_components)
+    sample_labels = ["sample_$i" for i = 1:n_samples]
+    predictor_labels = ["x_$j" for j = 1:n_predictors]
+    response_labels = ["class1", "class2"]
+    da_categories = [i ≤ n_samples ÷ 2 ? :a : :b for i = 1:n_samples]
+
+    return StatisticalProjections.CPPLS(
+        regression_coefficients,
+        scores,
+        X_loadings,
+        X_loading_weights,
+        Y_scores,
+        Y_loadings,
+        projection,
+        X_means,
+        Y_means,
+        fitted_values,
+        residuals,
+        X_variance,
+        X_total_variance,
+        gammas,
+        canonical_correlations,
+        small_norm_indices,
+        canonical_coefficients;
+        sample_labels = sample_labels,
+        predictor_labels = predictor_labels,
+        response_labels = response_labels,
+        analysis_mode = :discriminant,
+        da_categories = da_categories,
+    )
 end
 
 @testset "predict applies centering and component selection" begin
@@ -91,4 +151,58 @@ end
 
     scores = StatisticalProjections.project(dummy, X)
     @test scores ≈ expected_scores
+end
+
+@testset "decision_line accepts tuple dims" begin
+    X = [
+        -1.0 0.0
+        -0.5 0.2
+        0.5 -0.1
+        1.0 0.3
+    ]
+    labels = ["red", "red", "blue", "blue"]
+
+    cppls = StatisticalProjections.fit_cppls(X, labels, 2)
+    line = StatisticalProjections.decision_line(cppls; dims = (1, 2), n_components = 2)
+
+    @test length(line.xs) == 2
+    @test length(line.ys) == 2
+    @test isfinite(line.intercept)
+    @test length(line.normal) == 2
+end
+
+@testset "decision_line recovers separating hyperplane" begin
+    scores = [
+        -1.0 -0.5
+        -0.2 0.0
+        0.5 0.25
+        1.5 0.75
+    ]
+    intercept = 0.4
+    normal = [-0.3, 0.7]
+    class_diff = intercept .+ scores * normal
+    cppls = mock_decision_line_cppls(scores, class_diff)
+
+    line = StatisticalProjections.decision_line(cppls; dims = (1, 2), n_components = 2)
+
+    @test line.intercept ≈ intercept atol = 1e-10
+    @test line.normal ≈ normal atol = 1e-10
+end
+
+@testset "decision_line handles vertical separators" begin
+    scores = [
+        -0.2 -1.0
+        -0.1 0.2
+        -0.05 1.0
+        -0.01 -0.5
+    ]
+    intercept = 0.1
+    normal = [1.0, 0.0]
+    class_diff = intercept .+ scores * normal
+    cppls = mock_decision_line_cppls(scores, class_diff)
+
+    line = StatisticalProjections.decision_line(cppls; dims = (1, 2), n_components = 2)
+
+    @test all(isapprox.(line.xs, fill(-intercept / normal[1], 2); atol = 1e-10))
+    @test line.normal ≈ normal atol = 1e-10
 end

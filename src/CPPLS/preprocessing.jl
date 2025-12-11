@@ -20,12 +20,24 @@ centerscale(M::AbstractMatrix{<:Real}, ::Nothing) = M .- mean(M, dims = 1)
 convert_to_float64(M::AbstractMatrix{T}) where {T<:Real} =
     (T ≠ Float64 ? convert(Matrix{Float64}, M) : M)
 
+convert_to_float64(v::AbstractVector{T}) where {T<:Real} =
+    (T ≠ Float64 ? convert(Vector{Float64}, v) : v)
+
+function convert_auxiliary_to_float64(Y::LinearAlgebra.AbstractVecOrMat)
+    if Y isa AbstractMatrix
+        return Y isa Matrix{Float64} ? Y : Matrix{Float64}(Y)
+    elseif Y isa AbstractVector
+        return Y isa Vector{Float64} ? Y : Vector{Float64}(Y)
+    else
+        throw(ArgumentError("Y_auxiliary must be a vector or matrix"))
+    end
+end
 
 function cppls_prepare_data(
     X_predictors::AbstractMatrix{<:Real},
     Y_responses::AbstractMatrix{<:Real},
     n_components::Integer,
-    Y_auxiliary::Union{AbstractMatrix{<:Real},Nothing},
+    Y_auxiliary::Union{LinearAlgebra.AbstractVecOrMat,Nothing},
     observation_weights::Union{AbstractVector{<:Real},Nothing},
     center::Bool,
 )
@@ -34,7 +46,7 @@ function cppls_prepare_data(
     Y_responses = convert_to_float64(Y_responses)
 
     if Y_auxiliary !== nothing
-        Y_auxiliary = convert_to_float64(Y_auxiliary)
+        Y_auxiliary = convert_auxiliary_to_float64(Y_auxiliary)
     end
 
     Y_combined = isnothing(Y_auxiliary) ? Y_responses : hcat(Y_responses, Y_auxiliary)
