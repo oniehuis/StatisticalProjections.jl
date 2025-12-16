@@ -18,11 +18,36 @@ and for two centered variables $x$ and $y$, the weighted covariance is
 ```
 Weighted correlations are obtained by normalizing the weighted covariance by the corresponding weighted standard deviations.
 
-CPPLS computes, for each predictor in $X$, its weighted variance and its weighted covariance with each column of $Y$. These two quantities are blended according to the power parameter $\gamma$. When $\gamma$ is small, predictor variance carries more influence; when $\gamma$ approaches one, the emphasis shifts to predictor–response correlation. This results in a supervised weight matrix
+
+CPPLS constructs a supervised transformation matrix by combining predictor scale and predictor–response correlation, with the balance controlled by the power parameter $\gamma \in (0,1)$. For each predictor $x_j$ (a column of $X$) and each response $y_k$ (a column of $Y$), CPPLS computes the weighted standard deviation $\operatorname{std}_w(x_j)$ and the weighted correlation $\operatorname{corr}_w(x_j,y_k)$. These quantities are not combined additively, but multiplicatively through $\gamma$-dependent powers.
+
+The resulting supervised weight matrix is
+
 ```math
 W_0(\gamma) \in \mathbb{R}^{p \times q},
 ```
-where $p$ is the number of predictors and $q$ is the number of response columns, including auxiliary ones. Each column of $W_0(\gamma)$ is a supervised direction in the original predictor space. If auxiliary responses are supplied, they contribute additional columns and thereby enrich the set of supervised directions. Because the construction of $W_0(\gamma)$ uses the sample weights, heavily weighted samples exert proportionally greater influence on the supervised compression.
+
+where $p$ is the number of predictors and $q$ is the number of response columns, including auxiliary ones. It can be written as a product of a diagonal scale matrix and a correlation matrix,
+
+```math
+W_0(\gamma) = S_x(\gamma)\,C(\gamma),
+```
+
+with diagonal entries
+
+```math
+S_x(\gamma)_{jj} = \operatorname{std}_w(x_j)^{\frac{1-\gamma}{\gamma}},
+```
+
+and correlation entries
+
+```math
+C(\gamma)_{jk} = \operatorname{sign}\!\big(\operatorname{corr}_w(x_j,y_k)\big)\, \left|\operatorname{corr}_w(x_j,y_k)\right|^{\frac{\gamma}{1-\gamma}} .
+```
+
+Thus, each entry of $W_0(\gamma)$ is proportional to a product of a predictor-scale term and a predictor–response correlation term, each raised to a power determined by $\gamma$. When $\gamma$ is small, predictors with large weighted standard deviation are emphasized; when $\gamma$ approaches one, predictors that are strongly correlated with the responses dominate. This power-based variance–correlation trade-off replaces the need for external scaling of the data.
+
+Each column of $W_0(\gamma)$ is a supervised direction in the original predictor space. If auxiliary responses are supplied, they contribute additional columns and thereby enrich the set of supervised directions. Because the construction of $W_0(\gamma)$ uses the sample weights, heavily weighted samples exert proportionally greater influence on the supervised compression.
 
 Multiplying the predictor matrix by this weight matrix gives the $\gamma$-dependent supervised compression
 ```math
