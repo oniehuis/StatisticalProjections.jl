@@ -4,15 +4,21 @@ Canonical Powered Partial Least Squares (CPPLS) is a supervised projection metho
 
 Each CPPLS component is extracted in two conceptual stages. First, the predictors are projected onto supervised directions, one for each column of $Y$, using the $\gamma$-controlled mixture of weighted predictor variance and weighted predictor–response correlation. Second, a canonical correlation analysis (CCA) determines how these supervised directions should be linearly combined into a single latent variable that is optimally aligned with the primary responses. Auxiliary responses and observation weights enter the computation of supervised directions in the first stage, shaping the latent space that is subsequently analyzed by CCA, while the CCA itself is guided solely by the primary responses under the same weighting structure.
 
-To begin, $X$ and $Y$ are centered (and optionally scaled) using the supplied sample weights. If $w_i$ is the weight of sample $i$ and the weights are normalized to sum to one, the weighted mean of a variable $x$ becomes
+To begin, $X$ and $Y$ are centered using the supplied sample weights. If $w_i$ is the weight of sample $i$ and the weights are normalized to sum to one, the weighted mean of a variable $x$ becomes
 ```math
-\bar{x} = \sum_i w_i x_i ,
+\bar{x} = \sum_i w_i x_i .
 ```
-and weighted inner products
+All variances, covariances, and correlations are computed in a weighted sense. For a centered variable $x$, the weighted variance is
 ```math
-\langle u, v \rangle_w = \sum_i w_i u_i v_i
+\operatorname{Var}_w(x) = \sum_i w_i x_i^2 ,
 ```
-define all covariances. CPPLS computes, for each predictor in $X$, its weighted variance and its weighted covariance with each column of $Y$. These two quantities are blended according to the power parameter $\gamma$. When $\gamma$ is small, predictor variance carries more influence; when $\gamma$ approaches one, the emphasis shifts to predictor–response correlation. This results in a supervised weight matrix
+and for two centered variables $x$ and $y$, the weighted covariance is
+```math
+\operatorname{Cov}_w(x,y) = \sum_i w_i x_i y_i .
+```
+Weighted correlations are obtained by normalizing the weighted covariance by the corresponding weighted standard deviations.
+
+CPPLS computes, for each predictor in $X$, its weighted variance and its weighted covariance with each column of $Y$. These two quantities are blended according to the power parameter $\gamma$. When $\gamma$ is small, predictor variance carries more influence; when $\gamma$ approaches one, the emphasis shifts to predictor–response correlation. This results in a supervised weight matrix
 ```math
 W_0(\gamma) \in \mathbb{R}^{p \times q},
 ```
