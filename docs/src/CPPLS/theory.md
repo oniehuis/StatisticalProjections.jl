@@ -45,17 +45,37 @@ and correlation entries
 C(\gamma)_{jk} = \operatorname{sign}\!\big(\operatorname{corr}_w(x_j,y_k)\big)\, \left|\operatorname{corr}_w(x_j,y_k)\right|^{\frac{\gamma}{1-\gamma}} .
 ```
 
-Thus, each entry of $W_0(\gamma)$ is proportional to a product of a predictor-scale term and a predictor–response correlation term, each raised to a power determined by $\gamma$. When $\gamma$ is small, predictors with large weighted standard deviation are emphasized; when $\gamma$ approaches one, predictors that are strongly correlated with the responses dominate. This power-based variance–correlation trade-off replaces the need for external scaling of the data.
+Thus, each entry of $W_0(\gamma)$ is proportional to a product of a predictor-scale term and a predictor–response correlation term, each raised to a power determined by $\gamma$. When $\gamma$ is small, predictors with large weighted standard deviation are emphasized; when $\gamma$ approaches one, predictors that are strongly correlated with the responses dominate. In traditional PLS workflows, predictor scaling is often used to control whether high-variance variables dominate the model. In CPPLS, the relative influence of predictor scale and predictor–response correlation is instead controlled explicitly through the power parameter $\gamma$ within the weight construction. This reduces the need for separate scaling decisions as a preprocessing step.
 
-Each column of $W_0(\gamma)$ is a supervised direction in the original predictor space. If auxiliary responses are supplied, they contribute additional columns and thereby enrich the set of supervised directions. Because the construction of $W_0(\gamma)$ uses the sample weights, heavily weighted samples exert proportionally greater influence on the supervised compression.
+Each column of $W_0(\gamma)$ admits a direct geometric interpretation. For each response variable $y_k$, CPPLS constructs a direction in the original predictor space that emphasizes predictors with large weighted variance and predictors that are strongly correlated with that response, with the balance controlled by the power parameter $\gamma$. These directions represent response-specific supervised views of the predictor space.
 
-Multiplying the predictor matrix by this weight matrix gives the $\gamma$-dependent supervised compression
+Projecting the predictor matrix onto these directions,
+
 ```math
-Z(\gamma) = X W_0(\gamma),
+Z(\gamma) = X W_0(\gamma), 
 ```
-which has the same number of samples as $X$ but one column for each response variable. Every entry in $Z(\gamma)$ is a single summary value for a sample in the supervised direction associated with a response column. Auxiliary responses provide additional supervised views of the data, and sample weights ensure that classes or samples with higher weights have greater influence on how these supervised directions are shaped.
 
-To determine the optimal balance between variance and correlation, CPPLS evaluates a grid of $\gamma$-values. For each candidate $\gamma$, CPPLS computes $Z(\gamma)$ and performs a weighted canonical correlation analysis between $Z(\gamma)$ and the primary responses. Only the first canonical correlation is kept and serves as a score indicating how well that $\gamma$ captures structure relevant to the primary response. The optimal value $\gamma_{\mathrm{best}}$ is the one maximizing this weighted canonical correlation. This step does not yet produce components or deflate the data; it merely evaluates each candidate $\gamma$ under identical conditions.
+maps each sample from the original $p$-dimensional predictor space into a $q$-dimensional supervised space, where each coordinate summarizes the sample along a direction tailored to one column of $Y$. Auxiliary response variables contribute additional supervised directions and thereby enrich this intermediate representation. In this sense, $W_0(\gamma)$ defines a supervised low-dimensional coordinate system for the predictors. Every entry in $Z(\gamma) = X W_0(\gamma)$ is a single scalar summary value for a sample in the supervised direction associated with a response column. This representation is an intermediate supervised projection of $X$ and does not yet define a CPPLS component; rather, it provides the response-guided axes that are subsequently combined by canonical correlation analysis to form the final latent component.
+
+To choose the power parameter $\gamma$, CPPLS evaluates a grid of candidate values. For each candidate $\gamma$, it constructs the supervised compression
+
+```math
+Z(\gamma) = X W_0(\gamma), 
+```
+
+where the matrix $W_0(\gamma)$ depends on $\gamma$ through a power-based trade-off between predictor scale, represented by weighted standard deviations, and predictor–response association, represented by weighted correlations. CPPLS then performs a weighted canonical correlation analysis between $Z(\gamma)$ and the primary response block $Y_{\mathrm{prim}}$, and records the first (largest) canonical correlation
+
+```math
+\rho_1(\gamma) = \operatorname{ccorr}_w\!\big(Z(\gamma),\, Y_{\mathrm{prim}}\big) 
+```
+
+as a score for that value of $\gamma$. The optimal value
+
+```math
+\gamma_{\mathrm{best}} = \arg\max_{\gamma \in \mathcal{G}} \rho_1(\gamma)
+```
+
+is therefore the $\gamma$ whose variance–correlation–weighted construction of $Z(\gamma)$ yields a representation of $X$ that is maximally aligned, in the canonical correlation sense, with the primary responses. This step does not yet extract latent components or deflate the data; it only compares candidate supervised representations under identical conditions in order to select $\gamma$.
 
 Once the optimal $\gamma$ has been determined, CPPLS recomputes
 ```math
