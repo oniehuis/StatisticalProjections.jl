@@ -1,7 +1,7 @@
 module MakieExtension
 
 using Makie
-using StatisticalProjections
+import CPPLS
 
 const ROOT = joinpath(@__DIR__, "..")
 include(joinpath(ROOT, "ext", "makie_extensions", "cppls.jl"))

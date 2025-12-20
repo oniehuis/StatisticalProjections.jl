@@ -1,6 +1,6 @@
 # Fit
 
 ```@docs
-StatisticalProjections.fit_cppls
-StatisticalProjections.fit_cppls_light
+CPPLS.fit_cppls
+CPPLS.fit_cppls_light
 ```

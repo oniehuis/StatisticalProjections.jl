@@ -3,7 +3,7 @@ using Makie
 import Makie.ComputePipeline
 using Test
 
-const MakieExt = Base.get_extension(StatisticalProjections, :MakieExtension)
+const MakieExt = Base.get_extension(CPPLS, :MakieExtension)
 const ResolveException = Makie.ComputePipeline.ResolveException
 
 function dummy_cppls(; analysis = :discriminant)
@@ -16,10 +16,10 @@ function dummy_cppls(; analysis = :discriminant)
 
     if analysis === :discriminant
         labels = categorical(["class1", "class2", "class1", "class2"])
-        return StatisticalProjections.fit_cppls(X, labels, 2; gamma = 0.5)
+        return CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
     else
         y = reshape(Float64[0.1, -0.2, 0.3, -0.4], :, 1)
-        return StatisticalProjections.fit_cppls(X, y, 2; gamma = 0.5)
+        return CPPLS.fit_cppls(X, y, 2; gamma = 0.5)
     end
 end
 
@@ -39,7 +39,7 @@ end
     @test !MakieExt.matches_sample_length(:foo, 2)
     @test !MakieExt.matches_sample_length(:foo, :bar)
     @test invoke(MakieExt.matches_sample_length, Tuple{Any,Any}, :foo, 2) == false
-    @test StatisticalProjections.matches_sample_length(:foo, :bar) == false
+    @test CPPLS.matches_sample_length(:foo, :bar) == false
 end
 
 @testset "normalize_palette" begin
@@ -165,25 +165,25 @@ end
 
 @testset "scoreplot wrappers" begin
     da_model = dummy_cppls()
-    plot_obj = StatisticalProjections.scoreplot(da_model; axis = (xlabel = "Scores",))
+    plot_obj = CPPLS.scoreplot(da_model; axis = (xlabel = "Scores",))
     @test plot_obj isa Makie.FigureAxisPlot
     @test Makie.to_value(plot_obj.axis.xlabel) == "Scores"
 
     fig = Makie.Figure(size = (120, 120))
     ax = Makie.Axis(fig[1, 1])
-    plot_res = StatisticalProjections.scoreplot!(ax, da_model; xlabel = "X", ylabel = "Y")
+    plot_res = CPPLS.scoreplot!(ax, da_model; xlabel = "X", ylabel = "Y")
     @test plot_res isa Makie.Plot
     @test Makie.to_value(ax.xlabel) == "X"
     @test Makie.to_value(ax.ylabel) == "Y"
 
-    plot_auto = StatisticalProjections.scoreplot!(da_model; color = :green)
+    plot_auto = CPPLS.scoreplot!(da_model; color = :green)
     @test plot_auto isa Makie.Plot
 
     reg_model = dummy_cppls(analysis = :regression)
-    @test StatisticalProjections.scoreplot(reg_model) isa Makie.FigureAxisPlot
+    @test CPPLS.scoreplot(reg_model) isa Makie.FigureAxisPlot
 
-    @test_throws ResolveException StatisticalProjections.scoreplot(da_model; dims = (1, 3))
-    @test_throws ResolveException StatisticalProjections.scoreplot(
+    @test_throws ResolveException CPPLS.scoreplot(da_model; dims = (1, 3))
+    @test_throws ResolveException CPPLS.scoreplot(
         da_model;
         color = (:red,),
     )

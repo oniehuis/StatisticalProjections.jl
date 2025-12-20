@@ -1,27 +1,27 @@
 using Documenter
 using Markdown
 using Makie
-using StatisticalProjections
+using CPPLS
 
 function ensure_makie_extension!()
-    ext = Base.get_extension(StatisticalProjections, :MakieExtension)
+    ext = Base.get_extension(CPPLS, :MakieExtension)
     return ext !== nothing ? ext :
-           Base.require_extension(StatisticalProjections, :MakieExtension)
+           Base.require_extension(CPPLS, :MakieExtension)
 end
 
 ensure_makie_extension!()
 
 DocMeta.setdocmeta!(
-    StatisticalProjections,
+    CPPLS,
     :DocTestSetup,
-    :(using StatisticalProjections);
+    :(using CPPLS);
     recursive = true,
 )
 
 makedocs(
-    sitename = "StatisticalProjections",
+    sitename = "CPPLS",
     format = Documenter.HTML(mathengine = Documenter.MathJax()),
-    modules = [StatisticalProjections],
+    modules = [CPPLS],
     authors = "Oliver Niehuis",
     pages = [
         "Home" => "index.md",
@@ -43,4 +43,4 @@ makedocs(
     ],
 )
 
-deploydocs(repo = "github.com/oniehuis/StatisticalProjections.jl", devbranch = "main")
+deploydocs(repo = "github.com/oniehuis/CPPLS.jl", devbranch = "main")

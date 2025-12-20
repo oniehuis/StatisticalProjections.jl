@@ -64,7 +64,7 @@ function fisherztrack(
 end
 
 """
-    StatisticalProjections.robustcor(x::AbstractVector, y::AbstractVector)
+    CPPLS.robustcor(x::AbstractVector, y::AbstractVector)
 
 Robust correlation helper used inside projection diagnostics. Returns the Pearson 
 correlation between `x` and `y`, falling back to `0.0` when either input is constant or 
@@ -72,10 +72,10 @@ when the computed value is not finite (e.g. `NaN` or `Inf`).
 
 # Examples
 ```
-julia> StatisticalProjections.robustcor([1, 2, 3], [3, 2, 1])
+julia> CPPLS.robustcor([1, 2, 3], [3, 2, 1])
 -1.0
 
-julia> StatisticalProjections.robustcor([1, 1, 1], [2, 3, 4])
+julia> CPPLS.robustcor([1, 1, 1], [2, 3, 4])
 0.0
 ```
 """

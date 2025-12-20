@@ -14,10 +14,10 @@
         0 0 1  # correct
     ]
 
-    @test StatisticalProjections.nmc(Y_true, Y_pred, false) == 4 / 15
+    @test CPPLS.nmc(Y_true, Y_pred, false) == 4 / 15
 
     # weighted version over-penalises the minority class error (class 1)
-    weighted = StatisticalProjections.nmc(Y_true, Y_pred, true)
+    weighted = CPPLS.nmc(Y_true, Y_pred, true)
     @test weighted == 4 / 9
 end
 
@@ -25,8 +25,8 @@ end
     Y_true = [1 0; 0 1]
     Y_pred = [1 0; 1 0]
 
-    @test_throws DimensionMismatch StatisticalProjections.nmc(Y_true, Y_pred[1:1, :], false)
-    @test_throws ErrorException StatisticalProjections.nmc(
+    @test_throws DimensionMismatch CPPLS.nmc(Y_true, Y_pred[1:1, :], false)
+    @test_throws ErrorException CPPLS.nmc(
         Y_true[1:0, :],
         Y_pred[1:0, :],
         true,
@@ -37,6 +37,6 @@ end
     perms = [0.4, 0.6, 0.5, 0.55]
     model_acc = 0.5
 
-    p_value = StatisticalProjections.calculate_p_value(perms, model_acc)
+    p_value = CPPLS.calculate_p_value(perms, model_acc)
     @test p_value == 2 / (length(perms) + 1)
 end

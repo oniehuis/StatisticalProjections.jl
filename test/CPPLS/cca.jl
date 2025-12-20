@@ -1,5 +1,5 @@
 @testset "Iᵣ builds rectangular identity" begin
-    ident = StatisticalProjections.Iᵣ(3, 5)
+    ident = CPPLS.Iᵣ(3, 5)
     @test size(ident) == (3, 5)
     @test ident[1, 1] == 1.0 && ident[1, 4] == 0.0
     @test ident[3, 5] == 0.0
@@ -8,24 +8,24 @@ end
 @testset "cca_decomposition validates ranks and weights" begin
     X = [1.0 2.0; 3.0 4.0; 5.0 6.0]
     Y = [1.0 0.0; 0.0 1.0; 1.0 1.0]
-    rows, cols, _, dx, dy, _, corr = StatisticalProjections.cca_decomposition(X, Y)
+    rows, cols, _, dx, dy, _, corr = CPPLS.cca_decomposition(X, Y)
     @test rows == size(X, 1)
     @test dx == 2
     @test dy == 2
     @test 0.0 ≤ corr ≤ 1.0
 
     w = [1.0, 2.0, 1.0]
-    stats = StatisticalProjections.cca_decomposition(X, Y, w)
+    stats = CPPLS.cca_decomposition(X, Y, w)
     @test stats[1] == rows
 
-    @test_throws ErrorException StatisticalProjections.cca_decomposition(zeros(3, 2), Y)
-    @test_throws ErrorException StatisticalProjections.cca_decomposition(X, zeros(3, 2))
+    @test_throws ErrorException CPPLS.cca_decomposition(zeros(3, 2), Y)
+    @test_throws ErrorException CPPLS.cca_decomposition(X, zeros(3, 2))
 end
 
 @testset "correlation rescales and zeroes out constant columns" begin
     X = [1.0 2.0 2.0; 3.0 4.0 4.0]
     Y = [1.0 0.0; 0.0 1.0]
-    corr, stds = StatisticalProjections.correlation(X, Y)
+    corr, stds = CPPLS.correlation(X, Y)
     @test size(corr) == (3, 2)
     @test size(stds) == (1, 3)
 end
@@ -36,10 +36,10 @@ end
     Y_combined = hcat(Y, rand(5, 1))
 
     weights =
-        StatisticalProjections.compute_cppls_weights(X, Y_combined, Y, nothing, 0.5, 1e-4)
+        CPPLS.compute_cppls_weights(X, Y_combined, Y, nothing, 0.5, 1e-4)
     @test length(weights) == 4
 
-    weights_bounds = StatisticalProjections.compute_cppls_weights(
+    weights_bounds = CPPLS.compute_cppls_weights(
         X,
         Y_combined,
         Y,
@@ -50,8 +50,8 @@ end
     @test length(weights_bounds) == 4
 
     scalar_gamma =
-        StatisticalProjections.compute_cppls_weights(X, Y_combined, Y, nothing, 0.3, 1e-4)
-    tuple_gamma = StatisticalProjections.compute_cppls_weights(
+        CPPLS.compute_cppls_weights(X, Y_combined, Y, nothing, 0.3, 1e-4)
+    tuple_gamma = CPPLS.compute_cppls_weights(
         X,
         Y_combined,
         Y,
@@ -65,7 +65,7 @@ end
     @test scalar_gamma[4] ≈ tuple_gamma[4]
 
     loadings_one, corr_one, coeffs_one, gamma_one =
-        StatisticalProjections.compute_cppls_weights(
+        CPPLS.compute_cppls_weights(
             X,
             Y_combined,
             Y,
@@ -80,7 +80,7 @@ end
 
 @testset "weight helpers and gamma search utilities" begin
     σ = reshape([1.0, 2.0, 1.5], 1, :)
-    variance_weights = StatisticalProjections.compute_variance_weights(σ)
+    variance_weights = CPPLS.compute_variance_weights(σ)
     @test size(variance_weights) == (3, 1)
     @test variance_weights[2] == 2.0
     @test variance_weights[1] == 0.0
@@ -90,12 +90,12 @@ end
         0.9 0.2
         0.4 0.9
     ]
-    corr_weights = StatisticalProjections.compute_correlation_weights(correlations)
+    corr_weights = CPPLS.compute_correlation_weights(correlations)
     @test corr_weights[2] == maximum(correlations)
     @test corr_weights[1] == 0.0
 
     signs = ones(size(correlations))
-    general_weights = StatisticalProjections.compute_general_weights(
+    general_weights = CPPLS.compute_general_weights(
         ones(size(σ)),
         abs.(correlations),
         0.5,
@@ -116,12 +116,12 @@ end
         1 0
         0 1
     ]
-    X_Y_corr, X_std = StatisticalProjections.correlation(X_deflated, Y_responses)
+    X_Y_corr, X_std = CPPLS.correlation(X_deflated, Y_responses)
     corr_signs = sign.(X_Y_corr)
     X_Y_corr = abs.(X_Y_corr) ./ maximum(abs.(X_Y_corr))
     X_std ./= maximum(X_std)
 
-    val0 = StatisticalProjections.evaluate_canonical_correlation(
+    val0 = CPPLS.evaluate_canonical_correlation(
         0.0,
         X_deflated,
         X_std,
@@ -130,7 +130,7 @@ end
         Y_responses,
         nothing,
     )
-    val1 = StatisticalProjections.evaluate_canonical_correlation(
+    val1 = CPPLS.evaluate_canonical_correlation(
         1.0,
         X_deflated,
         X_std,
@@ -142,7 +142,7 @@ end
     @test val0 ≤ 0
     @test val1 ≤ 0
 
-    γ_tuple, corr_tuple = StatisticalProjections.compute_best_gamma(
+    γ_tuple, corr_tuple = CPPLS.compute_best_gamma(
         X_deflated,
         X_std,
         X_Y_corr,
@@ -156,7 +156,7 @@ end
     @test 0.0 ≤ corr_tuple ≤ 1.0
 
     gamma_choices = Union{Float64,NTuple{2,Float64}}[0.0, 0.5, (0.2, 0.8), (0.3, 0.3)]
-    γ_vec, corr_vec = StatisticalProjections.compute_best_gamma(
+    γ_vec, corr_vec = CPPLS.compute_best_gamma(
         X_deflated,
         X_std,
         X_Y_corr,
@@ -170,7 +170,7 @@ end
     @test 0.0 ≤ corr_vec ≤ 1.0
 
     loadings_zero, corr_zero, coeffs_zero, γ_zero =
-        StatisticalProjections.compute_best_loadings(
+        CPPLS.compute_best_loadings(
             X_deflated,
             X_std,
             X_Y_corr,
@@ -187,7 +187,7 @@ end
     @test 0.0 ≤ corr_zero ≤ 1.0
 
     loadings_general, corr_general, coeffs_general, γ_general =
-        StatisticalProjections.compute_best_loadings(
+        CPPLS.compute_best_loadings(
             X_deflated,
             X_std,
             X_Y_corr,

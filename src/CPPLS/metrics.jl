@@ -1,5 +1,5 @@
 """
-    StatisticalProjections.nmc(Y_true_one_hot::AbstractMatrix{<:Integer}, 
+    CPPLS.nmc(Y_true_one_hot::AbstractMatrix{<:Integer}, 
         Y_pred_one_hot::AbstractMatrix{<:Integer}, weighted::Bool)
 
 Compute the normalized misclassification cost between true and predicted one-hot label 
@@ -20,10 +20,10 @@ julia> Y_true = [1 0 0; 0 1 0; 0 1 0];
 
 julia> Y_pred = [1 0 0; 0 0 1; 0 1 0];
 
-julia> StatisticalProjections.nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
+julia> CPPLS.nmc(Y_true, Y_pred, false) ≈ 0.2222222222222222
 true
 
-julia> StatisticalProjections.nmc(Y_true, Y_pred, true) ≈ 0.25
+julia> CPPLS.nmc(Y_true, Y_pred, true) ≈ 0.25
 true
 ```
 """

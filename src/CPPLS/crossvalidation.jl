@@ -1,5 +1,5 @@
 """
-    StatisticalProjections.random_batch_indices(strata::AbstractVector{<:Integer},
+    CPPLS.random_batch_indices(strata::AbstractVector{<:Integer},
         num_batches::Integer, rng::AbstractRNG=Random.GLOBAL_RNG)
 
 Construct stratified folds. For each unique entry in `strata` the corresponding
@@ -13,7 +13,7 @@ fold.
 ```
 julia> using Random; rng = MersenneTwister(1);
 
-julia> folds = StatisticalProjections.random_batch_indices([1, 1, 2, 2, 2, 1], 3, rng)
+julia> folds = CPPLS.random_batch_indices([1, 1, 2, 2, 2, 1], 3, rng)
 3-element Vector{Vector{Int64}}:
  [5, 6]
  [4, 1]
@@ -67,7 +67,7 @@ cv_regression_error(caller::AbstractString) =
     throw(ArgumentError("$caller: $CV_REGRESSION_MESSAGE"))
 
 """
-    StatisticalProjections.optimize_num_latent_variables(
+    CPPLS.optimize_num_latent_variables(
         X_train_full::AbstractMatrix{<:Real},
         Y_train_full::AbstractMatrix{<:Integer},
         max_components::Integer,
@@ -116,7 +116,7 @@ julia> labels = repeat(["red", "blue", "green"], 4);
 
 julia> Y, _ = labels_to_one_hot(labels);
 
-julia> k = StatisticalProjections.optimize_num_latent_variables(
+julia> k = CPPLS.optimize_num_latent_variables(
              X, Y,
              2,
              3, 3,

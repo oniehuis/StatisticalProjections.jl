@@ -69,24 +69,24 @@ const CROSSVAL_LABELS_PLAIN = [
 
 @testset "random_batch_indices builds stratified folds" begin
     strata = [1, 1, 1, 2, 2, 2]
-    folds = StatisticalProjections.random_batch_indices(
+    folds = CPPLS.random_batch_indices(
         strata,
         3,
-        StatisticalProjections.MersenneTwister(1),
+        CPPLS.MersenneTwister(1),
     )
 
     @test length(folds) == 3
     @test sort!(reduce(vcat, folds)) == collect(1:length(strata))
     @test all(length(batch) == 2 for batch in folds)
-    @test_throws ArgumentError StatisticalProjections.random_batch_indices(strata, 0)
-    @test_throws ArgumentError StatisticalProjections.random_batch_indices(
+    @test_throws ArgumentError CPPLS.random_batch_indices(strata, 0)
+    @test_throws ArgumentError CPPLS.random_batch_indices(
         strata,
         length(strata) + 1,
     )
 end
 
 @testset "optimize_num_latent_variables selects component count" begin
-    selected = StatisticalProjections.optimize_num_latent_variables(
+    selected = CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
         CROSSVAL_Y,
         1,
@@ -101,12 +101,12 @@ end
         1e-10,
         1e-4,
         true,
-        StatisticalProjections.MersenneTwister(42),
+        CPPLS.MersenneTwister(42),
         false,
     )
     @test selected == 1
 
-    selected_labels = StatisticalProjections.optimize_num_latent_variables(
+    selected_labels = CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
         CROSSVAL_LABELS,
         1,
@@ -121,12 +121,12 @@ end
         1e-10,
         1e-4,
         true,
-        StatisticalProjections.MersenneTwister(42),
+        CPPLS.MersenneTwister(42),
         false,
     )
     @test selected_labels == selected
 
-    selected_plain = StatisticalProjections.optimize_num_latent_variables(
+    selected_plain = CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
         CROSSVAL_LABELS_PLAIN,
         1,
@@ -141,13 +141,13 @@ end
         1e-10,
         1e-4,
         true,
-        StatisticalProjections.MersenneTwister(42),
+        CPPLS.MersenneTwister(42),
         false,
     )
     @test selected_plain == selected
 
     opt_method = which(
-        StatisticalProjections.optimize_num_latent_variables,
+        CPPLS.optimize_num_latent_variables,
         Tuple{
             typeof(CROSSVAL_X),
             typeof(CROSSVAL_LABELS),
@@ -163,7 +163,7 @@ end
             Float64,
             Float64,
             Bool,
-            StatisticalProjections.MersenneTwister,
+            CPPLS.MersenneTwister,
             Bool,
         },
     )
@@ -171,7 +171,7 @@ end
     @test opt_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
 
     reg_matrix = Float64.(CROSSVAL_Y)
-    @test_throws ArgumentError StatisticalProjections.optimize_num_latent_variables(
+    @test_throws ArgumentError CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
         reg_matrix,
         1,
@@ -186,12 +186,12 @@ end
         1e-10,
         1e-4,
         true,
-        StatisticalProjections.MersenneTwister(42),
+        CPPLS.MersenneTwister(42),
         false,
     )
 
     reg_vector = randn(size(CROSSVAL_X, 1))
-    @test_throws ArgumentError StatisticalProjections.optimize_num_latent_variables(
+    @test_throws ArgumentError CPPLS.optimize_num_latent_variables(
         CROSSVAL_X,
         reg_vector,
         1,
@@ -206,14 +206,14 @@ end
         1e-10,
         1e-4,
         true,
-        StatisticalProjections.MersenneTwister(42),
+        CPPLS.MersenneTwister(42),
         false,
     )
 end
 
 @testset "nested_cv returns accuracies and component choices" begin
     accuracies, components = suppress_info() do
-        StatisticalProjections.nested_cv(
+        CPPLS.nested_cv(
             CROSSVAL_X,
             CROSSVAL_Y;
             gamma = 0.5,
@@ -222,7 +222,7 @@ end
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            rng = StatisticalProjections.MersenneTwister(123),
+            rng = CPPLS.MersenneTwister(123),
             verbose = false,
         )
     end
@@ -233,7 +233,7 @@ end
     @test all(comp == 1 for comp in components)
 
     accuracies_labels, components_labels = suppress_info() do
-        StatisticalProjections.nested_cv(
+        CPPLS.nested_cv(
             CROSSVAL_X,
             CROSSVAL_LABELS;
             gamma = 0.5,
@@ -242,14 +242,14 @@ end
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            rng = StatisticalProjections.MersenneTwister(1234),
+            rng = CPPLS.MersenneTwister(1234),
             verbose = false,
         )
     end
     @test components_labels == components
 
     accuracies_plain, components_plain = suppress_info() do
-        StatisticalProjections.nested_cv(
+        CPPLS.nested_cv(
             CROSSVAL_X,
             CROSSVAL_LABELS_PLAIN;
             gamma = 0.5,
@@ -258,7 +258,7 @@ end
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            rng = StatisticalProjections.MersenneTwister(4321),
+            rng = CPPLS.MersenneTwister(4321),
             verbose = false,
         )
     end
@@ -266,7 +266,7 @@ end
 
     real_vector = randn(size(CROSSVAL_X, 1))
     @test_throws ArgumentError suppress_info() do
-        StatisticalProjections.nested_cv(
+        CPPLS.nested_cv(
             CROSSVAL_X,
             real_vector;
             gamma = 0.5,
@@ -275,13 +275,13 @@ end
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            rng = StatisticalProjections.MersenneTwister(111),
+            rng = CPPLS.MersenneTwister(111),
             verbose = false,
         )
     end
 
     @test_throws ArgumentError suppress_info() do
-        StatisticalProjections.nested_cv(
+        CPPLS.nested_cv(
             CROSSVAL_X,
             Float64.(CROSSVAL_Y);
             gamma = 0.5,
@@ -290,13 +290,13 @@ end
             num_inner_folds = 2,
             num_inner_folds_repeats = 2,
             max_components = 1,
-            rng = StatisticalProjections.MersenneTwister(100),
+            rng = CPPLS.MersenneTwister(100),
             verbose = false,
         )
     end
 
     nested_method = which(
-        StatisticalProjections.nested_cv,
+        CPPLS.nested_cv,
         Tuple{typeof(CROSSVAL_X),typeof(CROSSVAL_LABELS)},
     )
     nested_sig = Base.unwrap_unionall(nested_method.sig)
@@ -306,7 +306,7 @@ end
 
 @testset "nested_cv_permutation shuffles responses" begin
     perms = suppress_info() do
-        StatisticalProjections.nested_cv_permutation(
+        CPPLS.nested_cv_permutation(
             CROSSVAL_X,
             CROSSVAL_Y;
             num_outer_folds = 2,
@@ -316,7 +316,7 @@ end
             max_components = 1,
             num_permutations = 2,
             center = false,
-            rng = StatisticalProjections.MersenneTwister(321),
+            rng = CPPLS.MersenneTwister(321),
             verbose = false,
         )
     end
@@ -325,7 +325,7 @@ end
     @test all(0.0 ≤ acc ≤ 1.0 for acc in perms)
 
     perms_labels = suppress_info() do
-        StatisticalProjections.nested_cv_permutation(
+        CPPLS.nested_cv_permutation(
             CROSSVAL_X,
             CROSSVAL_LABELS;
             num_outer_folds = 2,
@@ -335,14 +335,14 @@ end
             max_components = 1,
             num_permutations = 2,
             center = false,
-            rng = StatisticalProjections.MersenneTwister(654),
+            rng = CPPLS.MersenneTwister(654),
             verbose = false,
         )
     end
     @test length(perms_labels) == 2
 
     perms_plain = suppress_info() do
-        StatisticalProjections.nested_cv_permutation(
+        CPPLS.nested_cv_permutation(
             CROSSVAL_X,
             CROSSVAL_LABELS_PLAIN;
             num_outer_folds = 2,
@@ -352,7 +352,7 @@ end
             max_components = 1,
             num_permutations = 2,
             center = false,
-            rng = StatisticalProjections.MersenneTwister(222),
+            rng = CPPLS.MersenneTwister(222),
             verbose = false,
         )
     end
@@ -360,7 +360,7 @@ end
 
     real_vector = randn(size(CROSSVAL_X, 1))
     @test_throws ArgumentError suppress_info() do
-        StatisticalProjections.nested_cv_permutation(
+        CPPLS.nested_cv_permutation(
             CROSSVAL_X,
             real_vector;
             num_outer_folds = 2,
@@ -370,13 +370,13 @@ end
             max_components = 1,
             num_permutations = 2,
             center = false,
-            rng = StatisticalProjections.MersenneTwister(777),
+            rng = CPPLS.MersenneTwister(777),
             verbose = false,
         )
     end
 
     @test_throws ArgumentError suppress_info() do
-        StatisticalProjections.nested_cv_permutation(
+        CPPLS.nested_cv_permutation(
             CROSSVAL_X,
             Float64.(CROSSVAL_Y);
             num_outer_folds = 2,
@@ -386,13 +386,13 @@ end
             max_components = 1,
             num_permutations = 2,
             center = false,
-            rng = StatisticalProjections.MersenneTwister(987),
+            rng = CPPLS.MersenneTwister(987),
             verbose = false,
         )
     end
 
     perm_method = which(
-        StatisticalProjections.nested_cv_permutation,
+        CPPLS.nested_cv_permutation,
         Tuple{typeof(CROSSVAL_X),typeof(CROSSVAL_LABELS)},
     )
     perm_sig = Base.unwrap_unionall(perm_method.sig)

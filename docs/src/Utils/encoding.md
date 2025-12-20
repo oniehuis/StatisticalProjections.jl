@@ -1,6 +1,6 @@
 # Encoding
 
 ```@docs
-StatisticalProjections.labels_to_one_hot
-StatisticalProjections.one_hot_to_labels
+CPPLS.labels_to_one_hot
+CPPLS.one_hot_to_labels
 ```

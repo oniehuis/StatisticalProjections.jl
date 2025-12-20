@@ -1,7 +1,7 @@
 # Types
 
 ```@docs
-StatisticalProjections.AbstractCPPLS
-StatisticalProjections.CPPLS
-StatisticalProjections.CPPLSLight
+CPPLS.AbstractCPPLS
+CPPLS.CPPLS
+CPPLS.CPPLSLight
 ```

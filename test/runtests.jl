@@ -1,4 +1,4 @@
-using StatisticalProjections
+using CPPLS
 using Test
 
 @testset "CPPLS/types.jl" begin

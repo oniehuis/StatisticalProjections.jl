@@ -1,4 +1,4 @@
-module StatisticalProjections
+module CPPLS
 
 using LinearAlgebra
 using Optim
@@ -89,4 +89,4 @@ override `xlabel`/`ylabel`. Returns the created `Plot`.
 function scoreplot! end
 Base.@doc SCOREPLOT_BANG_DOC scoreplot!
 
-end # module StatisticalProjections
+end # module CPPLS

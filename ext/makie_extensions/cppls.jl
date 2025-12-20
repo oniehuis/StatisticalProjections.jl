@@ -1,9 +1,9 @@
-import StatisticalProjections: CPPLS, scoreplot, scoreplot!, matches_sample_length
+import CPPLS: scoreplot, scoreplot!, matches_sample_length
 
 const SCOREPLOT_AXIS_DEFAULTS = (xlabel = "Compound 1", ylabel = "Compound 2")
 const SCOREPLOT_AUTO_LABEL = gensym(:scoreplot_auto_label)
 
-Base.@doc StatisticalProjections.SCOREPLOT_DOC scoreplot
+Base.@doc CPPLS.SCOREPLOT_DOC scoreplot
 
 is_automatic_color(value) =
     value isa Makie.Automatic || value === Makie.Automatic() || value === Makie.automatic
@@ -164,7 +164,7 @@ end
     Makie.mixin_generic_plot_attributes()...
 end
 
-function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS}})
+function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.CPPLS}})
     input_nodes = [:cppls, :dims, :color, :color_by_response, :color_manual, :alpha]
     output_nodes = [:score_x, :score_y, :point_color]
 
@@ -208,7 +208,7 @@ function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS}})
     return plot
 end
 
-Makie.convert_arguments(::Type{<:ScorePlotPlot}, cppls::CPPLS) = (cppls,)
+Makie.convert_arguments(::Type{<:ScorePlotPlot}, cppls::CPPLS.CPPLS) = (cppls,)
 
 merge_axis_defaults(axis::NamedTuple) = merge(SCOREPLOT_AXIS_DEFAULTS, axis)
 merge_axis_defaults(axis) = SCOREPLOT_AXIS_DEFAULTS
@@ -237,7 +237,7 @@ function maybe_apply_axis_label!(axis, prop::Symbol, value, default_text)
     end
 end
 
-Base.@doc StatisticalProjections.SCOREPLOT_BANG_DOC scoreplot!
+Base.@doc CPPLS.SCOREPLOT_BANG_DOC scoreplot!
 
 function scoreplot!(
     axis::Makie.AbstractAxis,

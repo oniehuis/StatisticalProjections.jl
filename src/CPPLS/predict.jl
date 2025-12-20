@@ -131,7 +131,7 @@ Compute latent component scores by projecting new predictors `X` with a fitted C
 
 # Example
 ```
-julia> struct DemoCPPLS <: StatisticalProjections.AbstractCPPLS
+julia> struct DemoCPPLS <: CPPLS.AbstractCPPLS
            projection::Matrix{Float64}
            X_means::Matrix{Float64}
        end

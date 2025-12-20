@@ -16,16 +16,16 @@ using CategoricalArrays
         1 0
     ]
 
-    model = StatisticalProjections.fit_cppls(X, Y, 2; gamma = 0.5)
+    model = CPPLS.fit_cppls(X, Y, 2; gamma = 0.5)
 
-    @test model isa StatisticalProjections.CPPLS
+    @test model isa CPPLS.CPPLS
     @test size(model.regression_coefficients) == (size(X, 2), size(Y, 2), 2)
     @test size(model.fitted_values) == (size(X, 1), size(Y, 2), 2)
     @test size(model.residuals) == size(model.fitted_values)
     @test size(model.X_scores) == (size(X, 1), 2)
     @test size(model.Y_scores) == (size(Y, 1), 2)
-    @test model.X_means ≈ StatisticalProjections.mean(X, dims = 1)
-    @test model.Y_means ≈ StatisticalProjections.mean(Y, dims = 1)
+    @test model.X_means ≈ CPPLS.mean(X, dims = 1)
+    @test model.Y_means ≈ CPPLS.mean(Y, dims = 1)
     @test model.gammas ≈ fill(0.5, 2)
     @test length(model.canonical_correlations) == 2
     @test length(model.X_variance) == 2
@@ -47,7 +47,7 @@ end
     predictor_labels = [:p1, :p2]
     response_labels = ["r1", "r2"]
 
-    model = StatisticalProjections.fit_cppls(
+    model = CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -61,7 +61,7 @@ end
     @test model.predictor_labels == predictor_labels
     @test model.response_labels == response_labels
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -69,7 +69,7 @@ end
         sample_labels = ["only_two"],
     )
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -77,7 +77,7 @@ end
         predictor_labels = [:p1],
     )
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -85,7 +85,7 @@ end
         response_labels = ["r1"],
     )
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -93,7 +93,7 @@ end
         analysis_mode = :discriminant,
     )
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -101,7 +101,7 @@ end
         da_categories = ["classA"],
     )
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         Y,
         1;
@@ -126,10 +126,10 @@ end
     ]
     gamma_bounds = (0.2, 0.8)
 
-    full = StatisticalProjections.fit_cppls(X, Y, 2; gamma = gamma_bounds)
-    light = StatisticalProjections.fit_cppls_light(X, Y, 2; gamma = gamma_bounds)
+    full = CPPLS.fit_cppls(X, Y, 2; gamma = gamma_bounds)
+    light = CPPLS.fit_cppls_light(X, Y, 2; gamma = gamma_bounds)
 
-    @test light isa StatisticalProjections.CPPLSLight
+    @test light isa CPPLS.CPPLSLight
     @test light.regression_coefficients ≈ full.regression_coefficients
     @test light.X_means ≈ full.X_means
     @test light.Y_means ≈ full.Y_means
@@ -143,22 +143,22 @@ end
         2 3
     ]
     labels = categorical(["red", "blue", "red", "blue"])
-    Y, inferred = StatisticalProjections.labels_to_one_hot(labels)
+    Y, inferred = CPPLS.labels_to_one_hot(labels)
 
-    model = StatisticalProjections.fit_cppls(X, labels, 2; gamma = 0.5)
+    model = CPPLS.fit_cppls(X, labels, 2; gamma = 0.5)
     @test model.analysis_mode === :discriminant
     @test Set(model.response_labels) == Set(inferred)
     @test model.da_categories == labels
     @test !(model.da_categories === labels)
     plain_labels = ["red", "blue", "red", "blue"]
-    plain_model = StatisticalProjections.fit_cppls(X, plain_labels, 2; gamma = 0.5)
+    plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
     @test plain_model.analysis_mode === :discriminant
     @test Set(plain_model.response_labels) == Set(unique(plain_labels))
     @test plain_model.da_categories == plain_labels
     @test !(plain_model.da_categories === plain_labels)
     @test plain_model.regression_coefficients ≈ model.regression_coefficients
 
-    @test_throws ArgumentError StatisticalProjections.fit_cppls(
+    @test_throws ArgumentError CPPLS.fit_cppls(
         X,
         labels,
         2;
@@ -166,8 +166,8 @@ end
     )
 
     Y_vec = Float64[1, 0, 1, 0]
-    vec_model = StatisticalProjections.fit_cppls(X, Y_vec, 2; gamma = 0.5)
-    mat_model = StatisticalProjections.fit_cppls(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
+    vec_model = CPPLS.fit_cppls(X, Y_vec, 2; gamma = 0.5)
+    mat_model = CPPLS.fit_cppls(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
 
     @test vec_model.regression_coefficients ≈ mat_model.regression_coefficients
     @test vec_model.analysis_mode === :regression
@@ -183,13 +183,13 @@ end
     plain_labels = ["g1", "g2", "g1"]
 
     cat_method =
-        which(StatisticalProjections.fit_cppls, Tuple{typeof(X),typeof(cat_labels),Int})
+        which(CPPLS.fit_cppls, Tuple{typeof(X),typeof(cat_labels),Int})
 
     cat_sig = Base.unwrap_unionall(cat_method.sig)
     @test cat_sig.parameters[3].name.wrapper === CategoricalArrays.AbstractCategoricalArray
 
-    cat_model = StatisticalProjections.fit_cppls(X, cat_labels, 2; gamma = 0.5)
-    plain_model = StatisticalProjections.fit_cppls(X, plain_labels, 2; gamma = 0.5)
+    cat_model = CPPLS.fit_cppls(X, cat_labels, 2; gamma = 0.5)
+    plain_model = CPPLS.fit_cppls(X, plain_labels, 2; gamma = 0.5)
 
     @test cat_model.analysis_mode === :discriminant
     @test cat_model.regression_coefficients ≈ plain_model.regression_coefficients
@@ -211,9 +211,9 @@ end
         0 1
     ]
 
-    light = StatisticalProjections.fit_cppls_light(X, Y, 2; gamma = 0.5)
+    light = CPPLS.fit_cppls_light(X, Y, 2; gamma = 0.5)
     @test light.analysis_mode === :regression
-    @test_throws ArgumentError StatisticalProjections.fit_cppls_light(
+    @test_throws ArgumentError CPPLS.fit_cppls_light(
         X,
         Y,
         2;
@@ -222,10 +222,10 @@ end
     )
 
     labels = categorical(["a", "b", "a", "b"])
-    Y_one_hot, _ = StatisticalProjections.labels_to_one_hot(labels)
+    Y_one_hot, _ = CPPLS.labels_to_one_hot(labels)
 
-    light_from_labels = StatisticalProjections.fit_cppls_light(X, labels, 2; gamma = 0.5)
-    manual_discriminant = StatisticalProjections.fit_cppls_light(
+    light_from_labels = CPPLS.fit_cppls_light(X, labels, 2; gamma = 0.5)
+    manual_discriminant = CPPLS.fit_cppls_light(
         X,
         Y_one_hot,
         2;
@@ -240,7 +240,7 @@ end
     @test light_from_labels.Y_means ≈ manual_discriminant.Y_means
     plain_labels = ["a", "b", "a", "b"]
     light_from_plain =
-        StatisticalProjections.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
+        CPPLS.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
     @test light_from_plain.analysis_mode === :discriminant
     @test light_from_plain.regression_coefficients ≈
           light_from_labels.regression_coefficients
@@ -248,9 +248,9 @@ end
     @test light_from_plain.Y_means ≈ light_from_labels.Y_means
 
     Y_vec = Float64[1, 0, 1, 0]
-    light_vec = StatisticalProjections.fit_cppls_light(X, Y_vec, 2; gamma = 0.5)
+    light_vec = CPPLS.fit_cppls_light(X, Y_vec, 2; gamma = 0.5)
     light_vec_manual =
-        StatisticalProjections.fit_cppls_light(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
+        CPPLS.fit_cppls_light(X, reshape(Y_vec, :, 1), 2; gamma = 0.5)
 
     @test light_vec.regression_coefficients ≈ light_vec_manual.regression_coefficients
 end
@@ -266,15 +266,15 @@ end
     plain_labels = ["alpha", "beta", "alpha", "beta"]
 
     light_method = which(
-        StatisticalProjections.fit_cppls_light,
+        CPPLS.fit_cppls_light,
         Tuple{typeof(X),typeof(cat_labels),Int},
     )
     light_sig = Base.unwrap_unionall(light_method.sig)
     @test light_sig.parameters[3].name.wrapper ===
           CategoricalArrays.AbstractCategoricalArray
 
-    cat_light = StatisticalProjections.fit_cppls_light(X, cat_labels, 2; gamma = 0.5)
-    plain_light = StatisticalProjections.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
+    cat_light = CPPLS.fit_cppls_light(X, cat_labels, 2; gamma = 0.5)
+    plain_light = CPPLS.fit_cppls_light(X, plain_labels, 2; gamma = 0.5)
 
     @test cat_light.analysis_mode === :discriminant
     @test cat_light.regression_coefficients ≈ plain_light.regression_coefficients
@@ -308,7 +308,7 @@ end
     small_norm_flags,
     regression_coefficients,
     _,
-    _ = StatisticalProjections.cppls_prepare_data(
+    _ = CPPLS.cppls_prepare_data(
         X,
         Y,
         n_components,
@@ -320,7 +320,7 @@ end
     initial_weights = [3.0, 4.0]
     X_deflated_original = copy(X_deflated)
 
-    X_scoresᵢ, t_norm, _ = StatisticalProjections.process_component!(
+    X_scoresᵢ, t_norm, _ = CPPLS.process_component!(
         1,
         X_deflated,
         copy(initial_weights),
@@ -335,13 +335,13 @@ end
         1e-10,
     )
 
-    normalized_weights = initial_weights / StatisticalProjections.norm(initial_weights)
+    normalized_weights = initial_weights / CPPLS.norm(initial_weights)
     expected_scores = X_deflated_original * normalized_weights
-    expected_norm = StatisticalProjections.dot(expected_scores, expected_scores)
+    expected_norm = CPPLS.dot(expected_scores, expected_scores)
     expected_Y_loadings = (Y_responses' * expected_scores) / expected_norm
     expected_B =
         X_loading_weights[:, 1:1] *
-        StatisticalProjections.pinv(X_loadings[:, 1:1]' * X_loading_weights[:, 1:1]) *
+        CPPLS.pinv(X_loadings[:, 1:1]' * X_loading_weights[:, 1:1]) *
         Y_loadings[:, 1:1]'
 
     @test X_loading_weights[:, 1] ≈ normalized_weights
@@ -375,13 +375,13 @@ end
     small_norm_flags,
     regression_coefficients,
     _,
-    _ = StatisticalProjections.cppls_prepare_data(X, Y, 1, nothing, nothing, true)
+    _ = CPPLS.cppls_prepare_data(X, Y, 1, nothing, nothing, true)
 
     X_deflated .= 0  # force zero scores regardless of weights
     initial_weights = [1.0, 2.0]
     tol = 1e-8
 
-    _, t_norm, _ = StatisticalProjections.process_component!(
+    _, t_norm, _ = CPPLS.process_component!(
         1,
         X_deflated,
         copy(initial_weights),

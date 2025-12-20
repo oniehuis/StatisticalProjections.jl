@@ -60,7 +60,7 @@
         response_labels = [Symbol("resp_$i") for i = 1:n_responses]
         da_categories = ["class_$(1 + (i % 2))" for i = 1:n_samples]
 
-        cppls = CPPLS(
+        cppls = CPPLS.CPPLS(
             regression_coefficients,
             X_scores,
             X_loadings,
@@ -85,8 +85,8 @@
             da_categories = nothing,
         )
 
-        @test cppls isa StatisticalProjections.AbstractCPPLS
-        @test cppls isa CPPLS{
+        @test cppls isa CPPLS.AbstractCPPLS
+        @test cppls isa CPPLS.CPPLS{
             T,
             Tmask,
             typeof(sample_labels),
@@ -125,7 +125,7 @@
         @test size(cppls.X_means) == (1, n_predictors)
         @test size(cppls.Y_means) == (1, n_responses)
 
-        cppls_default = CPPLS(
+        cppls_default = CPPLS.CPPLS(
             regression_coefficients,
             X_scores,
             X_loadings,
@@ -150,7 +150,7 @@
         @test cppls_default.analysis_mode === :regression
         @test cppls_default.da_categories === nothing
 
-        cppls_da = CPPLS(
+        cppls_da = CPPLS.CPPLS(
             regression_coefficients,
             X_scores,
             X_loadings,
@@ -201,7 +201,7 @@ end
 
         light_model = CPPLSLight(regression_coefficients, X_means, Y_means, :regression)
 
-        @test light_model isa StatisticalProjections.AbstractCPPLS
+        @test light_model isa CPPLS.AbstractCPPLS
         @test light_model isa CPPLSLight{T}
         @test light_model.regression_coefficients === regression_coefficients
         @test light_model.X_means === X_means

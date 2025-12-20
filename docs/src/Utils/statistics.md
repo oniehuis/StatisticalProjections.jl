@@ -1,6 +1,6 @@
 # Statistics
 
 ```@docs
-StatisticalProjections.fisherztrack
-StatisticalProjections.separationaxis
+CPPLS.fisherztrack
+CPPLS.separationaxis
 ```

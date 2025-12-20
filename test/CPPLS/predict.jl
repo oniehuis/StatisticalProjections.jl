@@ -1,6 +1,6 @@
 using LinearAlgebra: I
 
-struct DummyProjectionModel <: StatisticalProjections.AbstractCPPLS
+struct DummyProjectionModel <: CPPLS.AbstractCPPLS
     projection::Matrix{Float64}
     X_means::Matrix{Float64}
 end
@@ -37,7 +37,7 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
     response_labels = ["class1", "class2"]
     da_categories = [i ≤ n_samples ÷ 2 ? :a : :b for i = 1:n_samples]
 
-    return StatisticalProjections.CPPLS(
+    return CPPLS.CPPLS(
         regression_coefficients,
         scores,
         X_loadings,
@@ -69,7 +69,7 @@ end
     regression_coefficients[:, :, 2] = [0.5 -0.2; 0.3 0.1]
     X_means = reshape([1.0, 2.0], 1, :)
     Y_means = reshape([0.25, -0.5], 1, :)
-    cppls = StatisticalProjections.CPPLSLight(
+    cppls = CPPLS.CPPLSLight(
         regression_coefficients,
         X_means,
         Y_means,
@@ -88,20 +88,20 @@ end
         expected[:, :, i] = centered * regression_coefficients[:, :, i] .+ Y_means
     end
 
-    preds_full = StatisticalProjections.predict(cppls, X)
-    preds_one = StatisticalProjections.predict(cppls, X, 1)
+    preds_full = CPPLS.predict(cppls, X)
+    preds_one = CPPLS.predict(cppls, X, 1)
 
     @test preds_full ≈ expected
     @test preds_one[:, :, 1] ≈ expected[:, :, 1]
     @test size(preds_full) == (size(X, 1), size(Y_means, 2), 2)
-    @test_throws DimensionMismatch StatisticalProjections.predict(cppls, X, 3)
+    @test_throws DimensionMismatch CPPLS.predict(cppls, X, 3)
 end
 
 @testset "predictonehot converts summed predictions to labels" begin
     regression_coefficients = ones(Float64, 1, 2, 1)
     X_means = reshape([0.0], 1, 1)
     Y_means = reshape([0.1, -0.2], 1, :)
-    cppls = StatisticalProjections.CPPLSLight(
+    cppls = CPPLS.CPPLSLight(
         regression_coefficients,
         X_means,
         Y_means,
@@ -129,7 +129,7 @@ end
         expected_one_hot[row, label] = 1
     end
 
-    result = StatisticalProjections.predictonehot(cppls, predictions)
+    result = CPPLS.predictonehot(cppls, predictions)
     @test result == expected_one_hot
 end
 
@@ -149,7 +149,7 @@ end
     centered = X .- X_means
     expected_scores = centered * projection
 
-    scores = StatisticalProjections.project(dummy, X)
+    scores = CPPLS.project(dummy, X)
     @test scores ≈ expected_scores
 end
 
@@ -162,8 +162,8 @@ end
     ]
     labels = ["red", "red", "blue", "blue"]
 
-    cppls = StatisticalProjections.fit_cppls(X, labels, 2)
-    line = StatisticalProjections.decision_line(cppls; dims = (1, 2), n_components = 2)
+    cppls = CPPLS.fit_cppls(X, labels, 2)
+    line = CPPLS.decision_line(cppls; dims = (1, 2), n_components = 2)
 
     @test length(line.xs) == 2
     @test length(line.ys) == 2
@@ -183,7 +183,7 @@ end
     class_diff = intercept .+ scores * normal
     cppls = mock_decision_line_cppls(scores, class_diff)
 
-    line = StatisticalProjections.decision_line(cppls; dims = (1, 2), n_components = 2)
+    line = CPPLS.decision_line(cppls; dims = (1, 2), n_components = 2)
 
     @test line.intercept ≈ intercept atol = 1e-10
     @test line.normal ≈ normal atol = 1e-10
@@ -201,7 +201,7 @@ end
     class_diff = intercept .+ scores * normal
     cppls = mock_decision_line_cppls(scores, class_diff)
 
-    line = StatisticalProjections.decision_line(cppls; dims = (1, 2), n_components = 2)
+    line = CPPLS.decision_line(cppls; dims = (1, 2), n_components = 2)
 
     @test all(isapprox.(line.xs, fill(-intercept / normal[1], 2); atol = 1e-10))
     @test line.normal ≈ normal atol = 1e-10

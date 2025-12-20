@@ -2,11 +2,11 @@
     M = [1.0 2.0; 3.0 4.0; 5.0 6.0]
     weights = [1.0, 2.0, 1.0]
 
-    centered_weighted, mean_weighted = StatisticalProjections.center_mean(M, weights)
-    centered_unweighted, mean_unweighted = StatisticalProjections.center_mean(M, nothing)
+    centered_weighted, mean_weighted = CPPLS.center_mean(M, weights)
+    centered_unweighted, mean_unweighted = CPPLS.center_mean(M, nothing)
 
     expected_weighted_mean = (weights' * M) / sum(weights)
-    expected_unweighted_mean = StatisticalProjections.mean(M, dims = 1)
+    expected_unweighted_mean = CPPLS.mean(M, dims = 1)
 
     @test mean_weighted == expected_weighted_mean
     @test all(isapprox.(centered_weighted, M .- expected_weighted_mean))
@@ -18,11 +18,11 @@ end
     M = [1.0 2.0; 3.0 4.0; 5.0 6.0]
     weights = [1.0, 2.0, 1.0]
 
-    weighted_cs = StatisticalProjections.centerscale(M, weights)
-    unweighted_cs = StatisticalProjections.centerscale(M, nothing)
+    weighted_cs = CPPLS.centerscale(M, weights)
+    unweighted_cs = CPPLS.centerscale(M, nothing)
 
     expected_weighted = (M .- (weights' * M) / sum(weights)) .* weights
-    expected_unweighted = M .- StatisticalProjections.mean(M, dims = 1)
+    expected_unweighted = M .- CPPLS.mean(M, dims = 1)
 
     @test weighted_cs == expected_weighted
     @test unweighted_cs == expected_unweighted
@@ -30,42 +30,42 @@ end
 
 @testset "convert_to_float64 preserves Float64 and converts other types" begin
     float_input = rand(3, 3)
-    @test StatisticalProjections.convert_to_float64(float_input) === float_input
+    @test CPPLS.convert_to_float64(float_input) === float_input
 
     int_input = [1 2; 3 4]
-    converted = StatisticalProjections.convert_to_float64(int_input)
+    converted = CPPLS.convert_to_float64(int_input)
     @test converted isa Matrix{Float64}
     @test converted == float.(int_input)
 end
 
 @testset "convert_to_float64 handles vectors" begin
     float_vec = rand(5)
-    @test StatisticalProjections.convert_to_float64(float_vec) === float_vec
+    @test CPPLS.convert_to_float64(float_vec) === float_vec
 
     int_vec = [1, 2, 3]
-    converted_vec = StatisticalProjections.convert_to_float64(int_vec)
+    converted_vec = CPPLS.convert_to_float64(int_vec)
     @test converted_vec isa Vector{Float64}
     @test converted_vec == float.(int_vec)
 end
 
 @testset "convert_auxiliary_to_float64 converts matrices and vectors" begin
     aux_matrix = [1 2; 3 4]
-    converted_matrix = StatisticalProjections.convert_auxiliary_to_float64(aux_matrix)
+    converted_matrix = CPPLS.convert_auxiliary_to_float64(aux_matrix)
     @test converted_matrix isa Matrix{Float64}
     @test converted_matrix == float.(aux_matrix)
 
     aux_vector = [1, 3, 5]
-    converted_vector = StatisticalProjections.convert_auxiliary_to_float64(aux_vector)
+    converted_vector = CPPLS.convert_auxiliary_to_float64(aux_vector)
     @test converted_vector isa Vector{Float64}
     @test converted_vector == float.(aux_vector)
 
     float_matrix = rand(2, 2)
-    @test StatisticalProjections.convert_auxiliary_to_float64(float_matrix) === float_matrix
+    @test CPPLS.convert_auxiliary_to_float64(float_matrix) === float_matrix
 
     float_vector = rand(4)
-    @test StatisticalProjections.convert_auxiliary_to_float64(float_vector) === float_vector
+    @test CPPLS.convert_auxiliary_to_float64(float_vector) === float_vector
 
-    @test_throws ArgumentError StatisticalProjections.convert_auxiliary_to_float64(1.0)
+    @test_throws ArgumentError CPPLS.convert_auxiliary_to_float64(1.0)
 end
 
 @testset "cppls_prepare_data validates shapes and returns deflated matrices" begin
@@ -87,7 +87,7 @@ end
     small_norm_flags,
     regression_coeffs,
     n_samples,
-    n_targets = StatisticalProjections.cppls_prepare_data(X, Y, 2, Y_aux, weights, true)
+    n_targets = CPPLS.cppls_prepare_data(X, Y, 2, Y_aux, weights, true)
 
     @test X_prep isa Matrix{Float64}
     @test Y_prep isa Matrix{Float64}
@@ -104,7 +104,7 @@ end
     @test n_samples == size(X, 1)
     @test n_targets == size(Y, 2)
 
-    @test_throws DimensionMismatch StatisticalProjections.cppls_prepare_data(
+    @test_throws DimensionMismatch CPPLS.cppls_prepare_data(
         X,
         Y[1:3, :],
         2,
@@ -112,7 +112,7 @@ end
         nothing,
         true,
     )
-    @test_throws DimensionMismatch StatisticalProjections.cppls_prepare_data(
+    @test_throws DimensionMismatch CPPLS.cppls_prepare_data(
         X,
         Y,
         2,

@@ -5,7 +5,7 @@
         1 6 9
     ]
 
-    invariant, variant = StatisticalProjections.find_invariant_and_variant_columns(M)
+    invariant, variant = CPPLS.find_invariant_and_variant_columns(M)
 
     @test invariant == [1]
     @test variant == [2, 3]
@@ -18,7 +18,7 @@ end
         0.5 2.0 3.1
     ]
 
-    invariant, variant = StatisticalProjections.find_invariant_and_variant_columns(M)
+    invariant, variant = CPPLS.find_invariant_and_variant_columns(M)
 
     @test invariant == [1]
     @test variant == [2, 3]

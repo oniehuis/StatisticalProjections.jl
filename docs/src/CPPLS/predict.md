@@ -1,8 +1,8 @@
 # Predict
 
 ```@docs
-StatisticalProjections.predict
-StatisticalProjections.predictonehot
-StatisticalProjections.project
-StatisticalProjections.decision_line
+CPPLS.predict
+CPPLS.predictonehot
+CPPLS.project
+CPPLS.decision_line
 ```

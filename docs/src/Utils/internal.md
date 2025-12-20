@@ -1,5 +1,5 @@
 # Internal
 
 ```@docs
-StatisticalProjections.robustcor
+CPPLS.robustcor
 ```

@@ -1,6 +1,6 @@
 # Visualization
 
 ```@docs
-StatisticalProjections.scoreplot
-StatisticalProjections.scoreplot!
+CPPLS.scoreplot
+CPPLS.scoreplot!
 ```

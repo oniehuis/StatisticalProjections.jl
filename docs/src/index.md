@@ -1,9 +1,10 @@
-# StatisticalProjections.jl
+# CPPLS.jl
 
-StatisticalProjections provides chemometric projection methods in Julia, currently centered
-on CPPLS-DA for supervised classification tasks. The goal is to enable reproducible
-preprocessing, fitting, and validation pipelines, so common chemometric analyses stay
-transparent and auditable.
+CPPLS provides a pure-Julia implementation of Canonical Powered Partial Least Squares 
+Discriminant Analysis (CPPLS-DA; Indahl et al. 2019, Liland & Indahl 2009) that handles 
+collinear predictors and exports interpretable loadings and scores.. The goal is to enable 
+reproducible preprocessing, fitting, and validation pipelines, so common chemometric 
+analyses stay transparent and auditable.
 
 ## Installation
 
@@ -11,13 +12,13 @@ The package is not registered, so install it directly from GitHub:
 
 ```
 julia> ]
-pkg> add https://github.com/oniehuis/StatisticalProjections.jl
+pkg> add https://github.com/oniehuis/CPPLS.jl
 ```
 
 After the installation finishes you can load it in the Julia REPL with:
 
 ```
-julia> using StatisticalProjections
+julia> using CPPLS
 ```
 
 ## Current capabilities
@@ -37,7 +38,7 @@ julia> using StatisticalProjections
 ## Quick taste
 
 ```@example 1
-using StatisticalProjections
+using CPPLS
 using Random
 using Statistics
 
@@ -87,10 +88,9 @@ unlikely to arise from chance alone.
 
 ## Disclaimer
 
-StatisticalProjections is research software provided “as is.” You remain responsible for
-validating every discriminant analysis and any downstream decision or deployment based on
-these models; the authors cannot be held liable if the algorithms produce misleading or
-incorrect results.
+CPPLS is research software provided “as is.” You remain responsible for validating every 
+discriminant analysis and any downstream decision or deployment based on these models; 
+the authors cannot be held liable if the algorithms produce misleading or incorrect results.
 
 ## References
 

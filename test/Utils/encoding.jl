@@ -9,14 +9,14 @@
         1 0 0
     ]
 
-    encoded = StatisticalProjections.labels_to_one_hot(label_indices, n_labels)
+    encoded = CPPLS.labels_to_one_hot(label_indices, n_labels)
 
     @test encoded == expected
 end
 
 @testset "labels_to_one_hot discovers label order" begin
     raw_labels = ["cat", "dog", "cat", "owl", "dog"]
-    encoded, uniques = StatisticalProjections.labels_to_one_hot(raw_labels)
+    encoded, uniques = CPPLS.labels_to_one_hot(raw_labels)
 
     @test uniques == ["cat", "dog", "owl"]
     @test size(encoded) == (length(raw_labels), length(uniques))
@@ -39,6 +39,6 @@ end
         0 1 0
     ]
 
-    decoded = StatisticalProjections.one_hot_to_labels(one_hot)
+    decoded = CPPLS.one_hot_to_labels(one_hot)
     @test decoded == [2, 1, 3, 2]
 end
