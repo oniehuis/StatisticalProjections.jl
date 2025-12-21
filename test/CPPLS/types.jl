@@ -1,8 +1,5 @@
 @testset "matches_sample_length fallback" begin
-    x::Any = :foo
-    y::Any = :bar
-    @test Base.invokelatest(CPPLS.matches_sample_length, x, y) == false
-    @test invoke(CPPLS.matches_sample_length, Tuple{Any,Any}, x, y) == false
+    @test CPPLS.matches_sample_length(:foo, :bar) == false
 end
 
 @testset "CPPLS stores selected training artefact" begin
