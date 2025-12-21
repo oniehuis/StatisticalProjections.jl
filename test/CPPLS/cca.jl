@@ -1,3 +1,5 @@
+using LinearAlgebra: rank
+
 @testset "Iᵣ builds rectangular identity" begin
     ident = CPPLS.Iᵣ(3, 5)
     @test size(ident) == (3, 5)
@@ -28,6 +30,53 @@ end
     corr, stds = CPPLS.correlation(X, Y)
     @test size(corr) == (3, 2)
     @test size(stds) == (1, 3)
+end
+
+@testset "cca_coeffs helpers return expected matrices" begin
+    X = [
+        1.0 2.0
+        3.0 4.0
+        5.0 6.0
+        7.0 8.0
+    ]
+    Y = [
+        1.0 0.0
+        0.0 1.0
+        1.0 1.0
+        0.5 0.5
+    ]
+
+    coeffs, coeffs_y, _ = CPPLS.cca_coeffs_and_corr(X, Y, nothing)
+    @test CPPLS.cca_coeffs(X, Y, nothing) ≈ coeffs
+    @test CPPLS.cca_coeffs_y(X, Y, nothing) ≈ coeffs_y
+
+    weights = [1.0, 2.0, 1.0, 0.5]
+    coeffs_w, coeffs_y_w, _ = CPPLS.cca_coeffs_and_corr(X, Y, weights)
+    @test CPPLS.cca_coeffs(X, Y, weights) ≈ coeffs_w
+    @test CPPLS.cca_coeffs_y(X, Y, weights) ≈ coeffs_y_w
+    @test size(coeffs_w, 1) == size(X, 2)
+    @test size(coeffs_y_w, 1) == size(Y, 2)
+end
+
+@testset "cca_coeffs_y pads zero rows for rank-deficient Y" begin
+    X = [
+        1.0 2.0
+        3.0 4.0
+        5.0 6.0
+        7.0 8.0
+    ]
+    y_col = [1.0, 2.0, 3.0, 4.0]
+    Y = hcat(y_col, 2 .* y_col, -1 .* y_col)
+
+    _, coeffs_y, _ = CPPLS.cca_coeffs_and_corr(X, Y, nothing)
+    dy = rank(Y)
+    remaining_rows = size(Y, 2) - dy
+    zero_rows = count(eachrow(coeffs_y)) do row
+        all(iszero, row)
+    end
+    @test remaining_rows > 0
+    @test size(coeffs_y, 1) == size(Y, 2)
+    @test zero_rows == remaining_rows
 end
 
 @testset "compute_cppls_weights handles gamma shortcuts" begin
