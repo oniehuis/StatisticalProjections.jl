@@ -1,5 +1,10 @@
+Base.@noinline function _matches_sample_length_fallback(x, y)
+    return CPPLS.matches_sample_length(x, y)
+end
+
 @testset "matches_sample_length fallback" begin
-    @test CPPLS.matches_sample_length(:foo, :bar) == false
+    @test _matches_sample_length_fallback(:foo, :bar) == false
+    @test invoke(CPPLS.matches_sample_length, Tuple{Any,Any}, :foo, :bar) == false
 end
 
 @testset "CPPLS stores selected training artefact" begin
