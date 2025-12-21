@@ -167,13 +167,12 @@ function compute_general_weights(
     X_standard_deviations::AbstractMatrix{<:Real},
     X_Y_correlations::AbstractMatrix{<:Real},
     gamma::Real,
-    correlation_signs::AbstractMatrix{<:Real},
-)
+    correlation_signs::AbstractMatrix{<:Real})
 
     transformed_X_standard_deviations = X_standard_deviations .^ ((1 - gamma) / gamma)
-    transformed_X_Y_correlations = X_Y_correlations .^ (gamma / (1 - gamma))
-    (correlation_signs .* transformed_X_Y_correlations) .*
-    transformed_X_standard_deviations'
+    transformed_X_Y_correlations =
+        correlation_signs .* abs.(X_Y_correlations) .^ (gamma / (1 - gamma))
+    transformed_X_Y_correlations .* transformed_X_standard_deviations'
 end
 
 
