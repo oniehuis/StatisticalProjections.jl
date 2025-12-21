@@ -93,3 +93,9 @@ end
         method = :centroid,
     )
 end
+
+@testset "intervalize builds adjacent intervals" begin
+    @test CPPLS.intervalize(0:0.5:1) == [(0.0, 0.5), (0.5, 1.0)]
+    @test CPPLS.intervalize([0.2]) == [(0.2, 0.2)]
+    @test_throws ArgumentError CPPLS.intervalize(Float64[])
+end

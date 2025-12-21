@@ -40,6 +40,9 @@ visualisation. `T1` is the floating-point element type used for continuous array
 - `canonical_correlations::Vector{T1}` — squared canonical correlations per component.
 - `small_norm_indices::Matrix{T2}` — boolean mask of columns deflated to zero.
 - `canonical_coefficients::Matrix{T1}` — canonical coefficient matrix from CCA.
+- `canonical_coefficients_y::Matrix{T1}` — canonical coefficient matrix in Y-space from CCA.
+- `W0_weights::Array{T1,3}` — initial CPPLS weight matrices per component.
+- `Z::Array{T1,3}` — supervised predictor projections per component (`X_deflated * W0_weights`).
 - `sample_labels::AbstractVector` — optional labels describing each observation.
 - `predictor_labels::AbstractVector` — optional labels for predictor columns.
 - `response_labels::AbstractVector` — labels for regression responses or DA classes.
@@ -71,6 +74,9 @@ struct CPPLS{
     canonical_correlations::Vector{T1}
     small_norm_indices::Matrix{T2}
     canonical_coefficients::Matrix{T1}
+    canonical_coefficients_y::Matrix{T1}
+    W0_weights::Array{T1,3}
+    Z::Array{T1,3}
     sample_labels::SL
     predictor_labels::PL
     response_labels::RL
@@ -95,7 +101,10 @@ function CPPLS(
     gammas::Vector{T1},
     canonical_correlations::Vector{T1},
     small_norm_indices::Matrix{T2},
-    canonical_coefficients::Matrix{T1};
+    canonical_coefficients::Matrix{T1},
+    canonical_coefficients_y::Matrix{T1},
+    W0_weights::Array{T1,3},
+    Z::Array{T1,3};
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
     response_labels::AbstractVector = String[],
@@ -137,6 +146,9 @@ function CPPLS(
         canonical_correlations,
         small_norm_indices,
         canonical_coefficients,
+        canonical_coefficients_y,
+        W0_weights,
+        Z,
         sample_labels,
         predictor_labels,
         response_labels,

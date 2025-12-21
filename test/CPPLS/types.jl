@@ -55,6 +55,23 @@
             reshape(Tmask.(0:(n_components*n_predictors-1)), n_components, n_predictors)
         canonical_coefficients =
             reshape(T.(21:(20+n_responses*n_components)), n_responses, n_components)
+        canonical_coefficients_y = reshape(
+            T.(301:(300+n_responses*n_components)),
+            n_responses,
+            n_components,
+        )
+        W0_weights = reshape(
+            T.(701:(700+n_predictors*n_responses*n_components)),
+            n_predictors,
+            n_responses,
+            n_components,
+        )
+        Z = reshape(
+            T.(901:(900+n_samples*n_responses*n_components)),
+            n_samples,
+            n_responses,
+            n_components,
+        )
         sample_labels = ["sample_$i" for i = 1:n_samples]
         predictor_labels = collect(1:n_predictors)
         response_labels = [Symbol("resp_$i") for i = 1:n_responses]
@@ -77,7 +94,10 @@
             gammas,
             canonical_correlations,
             small_norm_indices,
-            canonical_coefficients;
+            canonical_coefficients,
+            canonical_coefficients_y,
+            W0_weights,
+            Z;
             sample_labels = sample_labels,
             predictor_labels = predictor_labels,
             response_labels = response_labels,
@@ -111,6 +131,9 @@
         @test cppls.canonical_correlations === canonical_correlations
         @test cppls.small_norm_indices === small_norm_indices
         @test cppls.canonical_coefficients === canonical_coefficients
+        @test cppls.canonical_coefficients_y === canonical_coefficients_y
+        @test cppls.W0_weights === W0_weights
+        @test cppls.Z === Z
         @test cppls.sample_labels === sample_labels
         @test cppls.predictor_labels === predictor_labels
         @test cppls.response_labels === response_labels
@@ -124,6 +147,7 @@
         @test size(cppls.Y_scores) == (n_samples, n_components)
         @test size(cppls.X_means) == (1, n_predictors)
         @test size(cppls.Y_means) == (1, n_responses)
+        @test size(cppls.Z) == (n_samples, n_responses, n_components)
 
         cppls_default = CPPLS.CPPLS(
             regression_coefficients,
@@ -143,6 +167,9 @@
             canonical_correlations,
             small_norm_indices,
             canonical_coefficients,
+            canonical_coefficients_y,
+            W0_weights,
+            Z,
         )
         @test isempty(cppls_default.sample_labels)
         @test isempty(cppls_default.predictor_labels)
@@ -167,7 +194,10 @@
             gammas,
             canonical_correlations,
             small_norm_indices,
-            canonical_coefficients;
+            canonical_coefficients,
+            canonical_coefficients_y,
+            W0_weights,
+            Z;
             sample_labels = sample_labels,
             predictor_labels = predictor_labels,
             response_labels = response_labels,

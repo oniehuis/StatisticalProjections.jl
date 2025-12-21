@@ -36,6 +36,7 @@ export nested_cv
 export calculate_p_value
 export separationaxis
 export fisherztrack
+export intervalize
 export labels_to_one_hot
 export one_hot_to_labels
 export find_invariant_and_variant_columns

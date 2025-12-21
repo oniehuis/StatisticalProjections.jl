@@ -140,7 +140,10 @@ with_alpha(color, alpha) =
     is_automatic_color(color) ? color : Makie.RGBAf(Makie.to_color(color), Float32(alpha))
 
 function cppls_category_labels(cppls)
-    if cppls.analysis_mode === :discriminant && cppls.da_categories !== nothing
+    if hasproperty(cppls, :analysis_mode) &&
+       hasproperty(cppls, :da_categories) &&
+       cppls.analysis_mode === :discriminant &&
+       cppls.da_categories !== nothing
         data = cppls.da_categories
         return Vector{String}(string.(data))
     else
@@ -164,7 +167,7 @@ end
     Makie.mixin_generic_plot_attributes()...
 end
 
-function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.CPPLS}})
+function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.AbstractCPPLS}})
     input_nodes = [:cppls, :dims, :color, :color_by_response, :color_manual, :alpha]
     output_nodes = [:score_x, :score_y, :point_color]
 
@@ -173,6 +176,9 @@ function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.CPPLS}})
         input_nodes,
         output_nodes,
     ) do cppls, dims, default_color, color_by_response, color_manual, alpha
+        hasproperty(cppls, :X_scores) || throw(
+            ArgumentError("scoreplot requires a CPPLS model with stored X_scores."),
+        )
         dims_tuple = Tuple(dims)
         length(dims_tuple) == 2 || throw(
             ArgumentError(
@@ -208,7 +214,7 @@ function Makie.plot!(plot::ScorePlotPlot{<:Tuple{<:CPPLS.CPPLS}})
     return plot
 end
 
-Makie.convert_arguments(::Type{<:ScorePlotPlot}, cppls::CPPLS.CPPLS) = (cppls,)
+Makie.convert_arguments(::Type{<:ScorePlotPlot}, cppls::CPPLS.AbstractCPPLS) = (cppls,)
 
 merge_axis_defaults(axis::NamedTuple) = merge(SCOREPLOT_AXIS_DEFAULTS, axis)
 merge_axis_defaults(axis) = SCOREPLOT_AXIS_DEFAULTS

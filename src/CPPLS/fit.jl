@@ -31,7 +31,8 @@ end
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64), 
-        gamma_optimization_tolerance::Real=1e-4,
+        gamma_rel_tol::Real=1e-6,
+        gamma_abs_tol::Real=1e-12,
         t_squared_norm_tolerance::Real=1e-10,
         sample_labels::AbstractVector=String[],
         predictor_labels::AbstractVector=String[],
@@ -61,8 +62,8 @@ Fit a Canonical Powered Partial Least Squares (CPPLS) model.
   threshold are set to zero during deflation. Defaults to `1e-12`.
 - `X_loading_weight_tolerance`: Tolerance for small weights. Elements of the weight vector 
   below this threshold are set to zero. Defaults to `eps(Float64)`.
-- `gamma_optimization_tolerance`: Tolerance for the optimization process when determining 
-   the power parameter (`γ`). Defaults to `1e-4`.
+- `gamma_rel_tol`: Relative tolerance for the γ optimizer. Defaults to `1e-6`.
+- `gamma_abs_tol`: Absolute tolerance for the γ optimizer. Defaults to `1e-12`.
 - `t_squared_norm_tolerance`: Small positive value added to near-zero score norms to keep
   downstream divisions stable. Defaults to `1e-10`.
 - `sample_labels`: Optional labels describing each observation. Defaults to `String[]`.
@@ -99,6 +100,10 @@ A `CPPLS` object containing the following fields:
    zero.
 - `canonical_coefficients`: A matrix containing the canonical coefficients (`a`) from 
   canonical correlation analysis (`cor(Za, Yb)`).
+- `canonical_coefficients_y`: A matrix containing the canonical coefficients (`b`) for the
+  responses from canonical correlation analysis.
+- `W0_weights`: Initial CPPLS weight matrices per component.
+- `Z`: Supervised predictor projections per component (`X_deflated * W0_weights`).
 - `sample_labels`: The provided sample labels (or an empty vector if none were supplied).
 - `predictor_labels`: The provided predictor labels (or an empty vector).
 - `response_labels`: The provided response labels (or an empty vector).
@@ -147,7 +152,8 @@ function fit_cppls(
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
-    gamma_optimization_tolerance::Real = 1e-4,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
@@ -205,26 +211,34 @@ function fit_cppls(
 
     X_scores = Matrix{Float64}(undef, n_samples_X, n_components)
     canonical_coefficients = Matrix{Float64}(undef, size(Y_combined, 2), n_components)
+    canonical_coefficients_y = Matrix{Float64}(undef, n_targets_Y, n_components)
     max_canonical_correlations = Vector{Float64}(undef, n_components)
     gamma_values = fill(0.5, n_components)
     X_score_norms = Vector{Float64}(undef, n_components)
     Y_scores = Matrix{Float64}(undef, n_samples_X, n_components)
     fitted_values = Array{Float64}(undef, n_samples_X, n_targets_Y, n_components)
+    W0_weights = Array{Float64}(undef, n_predictors, size(Y_combined, 2), n_components)
+    Z = Array{Float64}(undef, n_samples_X, size(Y_combined, 2), n_components)
 
     for i = 1:n_components
         (
             X_loading_weightsᵢ,
             max_canonical_correlations[i],
             canonical_coefficients[:, i],
+            canonical_coefficients_y[:, i],
             gamma_values[i],
+            W0_weightsᵢ,
         ) = (compute_cppls_weights(
             X_deflated,
             Y_combined,
             Y_responses,
             observation_weights,
             gamma,
-            gamma_optimization_tolerance,
+            gamma_rel_tol,
+            gamma_abs_tol,
         ))
+        W0_weights[:, :, i] = W0_weightsᵢ
+        Z[:, :, i] = X_deflated * W0_weightsᵢ
 
         X_scoresᵢ, tᵢ_squared_norm, Y_loadingsᵢ = process_component!(
             i,
@@ -274,7 +288,10 @@ function fit_cppls(
         gamma_values,
         max_canonical_correlations,
         small_norm_flags,
-        canonical_coefficients;
+        canonical_coefficients,
+        canonical_coefficients_y,
+        W0_weights,
+        Z;
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
         response_labels = response_labels,
@@ -343,7 +360,8 @@ function fit_cppls_from_labels(
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
-    gamma_optimization_tolerance::Real = 1e-4,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
@@ -367,7 +385,8 @@ function fit_cppls_from_labels(
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
-        gamma_optimization_tolerance = gamma_optimization_tolerance,
+        gamma_rel_tol = gamma_rel_tol,
+        gamma_abs_tol = gamma_abs_tol,
         t_squared_norm_tolerance = t_squared_norm_tolerance,
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
@@ -407,7 +426,8 @@ function fit_cppls(
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
-    gamma_optimization_tolerance::Real = 1e-4,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
     sample_labels::AbstractVector = String[],
     predictor_labels::AbstractVector = String[],
@@ -426,7 +446,8 @@ function fit_cppls(
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
-        gamma_optimization_tolerance = gamma_optimization_tolerance,
+        gamma_rel_tol = gamma_rel_tol,
+        gamma_abs_tol = gamma_abs_tol,
         t_squared_norm_tolerance = t_squared_norm_tolerance,
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
@@ -446,7 +467,8 @@ end
         center::Bool=true,
         X_tolerance::Real=1e-12,
         X_loading_weight_tolerance::Real=eps(Float64),
-        gamma_optimization_tolerance::Real=1e-4,
+        gamma_rel_tol::Real=1e-6,
+        gamma_abs_tol::Real=1e-12,
         t_squared_norm_tolerance::Real=1e-10,
         analysis_mode::Symbol=:regression)
 
@@ -491,7 +513,8 @@ function fit_cppls_light(
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
-    gamma_optimization_tolerance::Real = 1e-4,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
     analysis_mode::Symbol = :regression,
 ) where {T1<:Real,T2<:Real}
@@ -521,13 +544,14 @@ function fit_cppls_light(
     )
 
     for i = 1:n_components
-        X_loading_weightsᵢ, _, _, _ = compute_cppls_weights(
+        X_loading_weightsᵢ, _, _, _, _, _ = compute_cppls_weights(
             X_deflated,
             Y_combined,
             Y_responses,
             observation_weights,
             gamma,
-            gamma_optimization_tolerance,
+            gamma_rel_tol,
+            gamma_abs_tol,
         )
 
         process_component!(
@@ -615,7 +639,8 @@ function fit_cppls_light_from_labels(
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
-    gamma_optimization_tolerance::Real = 1e-4,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
 ) where {T1<:Real,T2<:Real}
     Y_responses, _ = labels_to_one_hot(labels)
@@ -630,7 +655,8 @@ function fit_cppls_light_from_labels(
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
-        gamma_optimization_tolerance = gamma_optimization_tolerance,
+        gamma_rel_tol = gamma_rel_tol,
+        gamma_abs_tol = gamma_abs_tol,
         t_squared_norm_tolerance = t_squared_norm_tolerance,
         analysis_mode = :discriminant,
     )
@@ -665,7 +691,8 @@ function fit_cppls_light(
     center::Bool = true,
     X_tolerance::Real = 1e-12,
     X_loading_weight_tolerance::Real = eps(Float64),
-    gamma_optimization_tolerance::Real = 1e-4,
+    gamma_rel_tol::Real = 1e-6,
+    gamma_abs_tol::Real = 1e-12,
     t_squared_norm_tolerance::Real = 1e-10,
 ) where {T1<:Real,T2<:Real}
 
@@ -681,7 +708,8 @@ function fit_cppls_light(
         center = center,
         X_tolerance = X_tolerance,
         X_loading_weight_tolerance = X_loading_weight_tolerance,
-        gamma_optimization_tolerance = gamma_optimization_tolerance,
+        gamma_rel_tol = gamma_rel_tol,
+        gamma_abs_tol = gamma_abs_tol,
         t_squared_norm_tolerance = t_squared_norm_tolerance,
         analysis_mode = :regression,
     )

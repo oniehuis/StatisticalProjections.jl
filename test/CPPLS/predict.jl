@@ -32,6 +32,9 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
     canonical_correlations = fill(0.9, n_components)
     small_norm_indices = zeros(Int, n_components, n_predictors)
     canonical_coefficients = zeros(Float64, n_responses, n_components)
+    canonical_coefficients_y = zeros(Float64, n_responses, n_components)
+    W0_weights = zeros(Float64, n_predictors, n_responses, n_components)
+    Z = zeros(Float64, n_samples, n_responses, n_components)
     sample_labels = ["sample_$i" for i = 1:n_samples]
     predictor_labels = ["x_$j" for j = 1:n_predictors]
     response_labels = ["class1", "class2"]
@@ -54,7 +57,10 @@ function mock_decision_line_cppls(scores::Matrix{Float64}, class_diff::Vector{Fl
         gammas,
         canonical_correlations,
         small_norm_indices,
-        canonical_coefficients;
+        canonical_coefficients,
+        canonical_coefficients_y,
+        W0_weights,
+        Z;
         sample_labels = sample_labels,
         predictor_labels = predictor_labels,
         response_labels = response_labels,

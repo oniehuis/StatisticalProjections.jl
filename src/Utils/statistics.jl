@@ -64,6 +64,28 @@ function fisherztrack(
 end
 
 """
+    intervalize(values::AbstractVector{<:Real})
+
+Convert a sequence of numeric values into adjacent `(lo, hi)` intervals by pairing
+consecutive entries. This is useful for building a vector of γ-intervals from a range. For 
+example, `intervalize(0:0.1:0.4)` returns `[(0.0,0.1),(0.1,0.2),(0.2,0.3),(0.3,0.4)]`.
+
+If `values` has length 1, a single `(x, x)` interval is returned. An empty
+collection throws an `ArgumentError`.
+"""
+function intervalize(values::AbstractVector{<:Real})
+    n = length(values)
+    n > 0 || throw(ArgumentError("values must contain at least one element."))
+    n == 1 && return [(values[1], values[1])]
+
+    intervals = Vector{Tuple{eltype(values),eltype(values)}}(undef, n - 1)
+    @inbounds for i in 1:(n - 1)
+        intervals[i] = (values[i], values[i + 1])
+    end
+    intervals
+end
+
+"""
     CPPLS.robustcor(x::AbstractVector, y::AbstractVector)
 
 Robust correlation helper used inside projection diagnostics. Returns the Pearson 

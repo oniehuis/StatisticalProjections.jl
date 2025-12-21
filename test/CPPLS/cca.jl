@@ -8,7 +8,7 @@ end
 @testset "cca_decomposition validates ranks and weights" begin
     X = [1.0 2.0; 3.0 4.0; 5.0 6.0]
     Y = [1.0 0.0; 0.0 1.0; 1.0 1.0]
-    rows, cols, _, dx, dy, _, corr = CPPLS.cca_decomposition(X, Y)
+    rows, cols, _, _, dx, dy, _, _, corr = CPPLS.cca_decomposition(X, Y)
     @test rows == size(X, 1)
     @test dx == 2
     @test dy == 2
@@ -35,9 +35,16 @@ end
     Y = rand(5, 2)
     Y_combined = hcat(Y, rand(5, 1))
 
-    weights =
-        CPPLS.compute_cppls_weights(X, Y_combined, Y, nothing, 0.5, 1e-4)
-    @test length(weights) == 4
+    weights = CPPLS.compute_cppls_weights(
+        X,
+        Y_combined,
+        Y,
+        nothing,
+        0.5,
+        1e-6,
+        1e-12,
+    )
+    @test length(weights) == 6
 
     weights_bounds = CPPLS.compute_cppls_weights(
         X,
@@ -45,37 +52,48 @@ end
         Y,
         nothing,
         (0.1, 0.9),
-        1e-4,
+        1e-6,
+        1e-12,
     )
-    @test length(weights_bounds) == 4
+    @test length(weights_bounds) == 6
 
-    scalar_gamma =
-        CPPLS.compute_cppls_weights(X, Y_combined, Y, nothing, 0.3, 1e-4)
+    scalar_gamma = CPPLS.compute_cppls_weights(
+        X,
+        Y_combined,
+        Y,
+        nothing,
+        0.3,
+        1e-6,
+        1e-12,
+    )
     tuple_gamma = CPPLS.compute_cppls_weights(
         X,
         Y_combined,
         Y,
         nothing,
         (0.3, 0.3),
-        1e-4,
+        1e-6,
+        1e-12,
     )
     @test all(isapprox.(scalar_gamma[1], tuple_gamma[1]))
     @test scalar_gamma[2] ≈ tuple_gamma[2]
     @test all(isapprox.(scalar_gamma[3], tuple_gamma[3]))
-    @test scalar_gamma[4] ≈ tuple_gamma[4]
+    @test scalar_gamma[5] ≈ tuple_gamma[5]
 
-    loadings_one, corr_one, coeffs_one, gamma_one =
+    loadings_one, corr_one, coeffs_one, coeffs_one_y, gamma_one, _ =
         CPPLS.compute_cppls_weights(
             X,
             Y_combined,
             Y,
             nothing,
             (1.0, 1.0),
-            1e-4,
+            1e-6,
+            1e-12,
         )
     @test gamma_one == 1.0
     @test all(isfinite.(loadings_one))
     @test all(isnan.(coeffs_one))
+    @test all(isnan.(coeffs_one_y))
 end
 
 @testset "weight helpers and gamma search utilities" begin
@@ -150,7 +168,8 @@ end
         Y_responses,
         nothing,
         (0.0, 1.0),
-        1e-4,
+        1e-6,
+        1e-12,
     )
     @test 0.0 ≤ γ_tuple ≤ 1.0
     @test 0.0 ≤ corr_tuple ≤ 1.0
@@ -164,12 +183,13 @@ end
         Y_responses,
         nothing,
         gamma_choices,
-        1e-4,
+        1e-6,
+        1e-12,
     )
     @test 0.0 ≤ γ_vec ≤ 1.0
     @test 0.0 ≤ corr_vec ≤ 1.0
 
-    loadings_zero, corr_zero, coeffs_zero, γ_zero =
+    loadings_zero, corr_zero, coeffs_zero, coeffs_zero_y, γ_zero, _ =
         CPPLS.compute_best_loadings(
             X_deflated,
             X_std,
@@ -178,15 +198,17 @@ end
             Y_responses,
             nothing,
             (0.0, 0.0),
-            1e-4,
+            1e-6,
+            1e-12,
             size(Y_responses, 2),
         )
     @test γ_zero == 0.0
     @test all(isnan, coeffs_zero)
+    @test all(isnan, coeffs_zero_y)
     @test size(loadings_zero) == (size(X_deflated, 2),)
     @test 0.0 ≤ corr_zero ≤ 1.0
 
-    loadings_general, corr_general, coeffs_general, γ_general =
+    loadings_general, corr_general, coeffs_general, coeffs_general_y, γ_general, _ =
         CPPLS.compute_best_loadings(
             X_deflated,
             X_std,
@@ -195,11 +217,13 @@ end
             Y_responses,
             nothing,
             (0.2, 0.8),
-            1e-4,
+            1e-6,
+            1e-12,
             size(Y_responses, 2),
         )
     @test 0.2 ≤ γ_general ≤ 0.8
     @test all(isfinite.(coeffs_general))
+    @test all(isfinite.(coeffs_general_y))
     @test length(loadings_general) == size(X_deflated, 2)
     @test 0.0 ≤ corr_general ≤ 1.0
 end
